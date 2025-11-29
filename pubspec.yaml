@@ -1,0 +1,55 @@
+name: projet
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  google_maps_flutter: ^2.6.0
+  google_geocoding_api: ^1.0.1
+  flutter_dotenv: ^5.1.0
+
+
+  # UI / Animations
+  lottie: ^3.0.0
+  animated_text_kit: ^4.2.2
+  google_fonts: ^4.0.3
+
+  # Location
+  geolocator: ^10.1.0
+  geocoding: ^3.0.0
+
+  flutter_map: ^6.0.0
+  latlong2: ^0.9.1
+  google_maps_flutter_web: ^0.5.4
+
+  
+
+  # Network
+  http: ^1.2.0
+
+  # State management
+  provider: ^6.1.2
+
+  # Icons generator
+  flutter_launcher_icons: ^0.13.1
+  google_places_flutter: ^2.1.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
