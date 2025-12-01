@@ -1,21 +1,24 @@
 // lib/models/place_model.dart
-// Modèle de données pour un lieu d'intérêt (POI) stocké dans SQLite.
 
 class Place {
-  // L'ID auto-incrémenté dans SQLite
   final int? id; 
-  // Clé étrangère implicite pour lier le lieu à une ville
   final String cityName; 
-  
   final String title;
   final String description;
-  final String category; // ex: 'Musée', 'Restaurant', 'Parc'
+  final String category;
   final double latitude;
   final double longitude;
-  final String imageUrl; // URL ou chemin d'asset pour l'image
+  final String imageUrl; 
+  final double rating; 
+  final int noteCount;
   
-  final double rating; // Note moyenne
-  final int noteCount; // Nombre de notes/commentaires
+  // L'identifiant unique Google (ex: "ChIJ...")
+  final String placeId; 
+
+  // ⚠️ AJOUTS OBLIGATOIRES POUR SQLITE (Commentaires & Notes perso)
+  // Ces champs ne sont pas 'final' car on peut vouloir les modifier après chargement
+  String? userComment;
+  double? userRating;
 
   Place({
     this.id,
@@ -28,9 +31,12 @@ class Place {
     required this.imageUrl,
     this.rating = 0.0,
     this.noteCount = 0,
+    required this.placeId,
+    // ⚠️ On les ajoute au constructeur
+    this.userComment,
+    this.userRating,
   });
 
-  // Convertit un objet Place en Map pour insertion/mise à jour dans SQLite
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -43,10 +49,13 @@ class Place {
       'imageUrl': imageUrl,
       'rating': rating,
       'noteCount': noteCount,
+      'placeId': placeId,
+      // ⚠️ On les ajoute au mappage vers la BDD
+      'userComment': userComment,
+      'userRating': userRating,
     };
   }
 
-  // Crée un objet Place à partir d'un Map (lu depuis SQLite)
   factory Place.fromMap(Map<String, dynamic> map) {
     return Place(
       id: map['id'] as int?,
@@ -57,15 +66,47 @@ class Place {
       latitude: map['latitude'] as double,
       longitude: map['longitude'] as double,
       imageUrl: map['imageUrl'] as String,
-      // Conversion sécurisée des nombres (stocké en REAL/INTEGER dans SQLite)
       rating: map['rating'] as double? ?? 0.0,
       noteCount: map['noteCount'] as int? ?? 0,
+      placeId: map['placeId'] as String? ?? '',
+      // ⚠️ On les récupère depuis la BDD
+      userComment: map['userComment'] as String?,
+      userRating: map['userRating'] as double?,
     );
   }
 
-  // Pour le débogage
-  @override
-  String toString() {
-    return 'Place(id: $id, title: $title, city: $cityName)';
+  // ... (Constructeurs et autres méthodes existants)
+
+  // ⚠️ AJOUT : Méthode pour cloner un lieu en modifiant certains champs
+  Place copyWith({
+    String? placeId,
+    String? cityName,
+    String? title,
+    String? description,
+    String? category,
+    double? latitude,
+    double? longitude,
+    String? imageUrl,
+    double? rating,
+    int? noteCount,
+    String? userComment,
+    double? userRating,
+  }) {
+    return Place(
+      id: id, // On garde le même ID interne
+      placeId: placeId ?? this.placeId,
+      cityName: cityName ?? this.cityName,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      category: category ?? this.category,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      imageUrl: imageUrl ?? this.imageUrl,
+      rating: rating ?? this.rating,
+      noteCount: noteCount ?? this.noteCount,
+      userComment: userComment ?? this.userComment,
+      userRating: userRating ?? this.userRating,
+    );
   }
+// ... (Reste du fichier)
 }

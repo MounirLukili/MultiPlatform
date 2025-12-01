@@ -2,14 +2,16 @@
 
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter/foundation.dart'; // Pour kIsWeb
 import '../models/place_model.dart';
 
 class PlacesService {
-  // ⚠️ REMPLACER PAR VOTRE CLÉ API GOOGLE PLACES
-  static const String _apiKey = 'VOTRE_CLE_API_GOOGLE_PLACES_ICI'; 
+  // ⚠️ REMETTRE VOTRE CLÉ ICI
+  static const String _apiKey = 'AIzaSyCd2yc9XIbvJpGKf43-nVwg-fOykQD2XqE'; 
   static const String _baseUrl = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json';
+  static const String _photoUrl = 'https://maps.googleapis.com/maps/api/place/photo';
+  static const String _detailsUrl = 'https://maps.googleapis.com/maps/api/place/details/json';
 
-  // Mappage des icônes de l'application vers les types Google Places (en anglais)
   static const Map<String, String> categoryMap = {
     'manger': 'restaurant',
     'nature': 'park',
@@ -18,23 +20,27 @@ class PlacesService {
     'favoris': 'favorite', 
   };
 
+  // 1. Fonction pour construire l'URL de l'image
+  String _buildPhotoUrl(String photoReference) {
+    // maxwidth=400 permet d'avoir une image de bonne qualité sans être trop lourde
+    String url = '$_photoUrl?maxwidth=400&photo_reference=$photoReference&key=$_apiKey';
+    
+    if (kIsWeb) {
+      return 'https://cors-anywhere.herokuapp.com/$url';
+    }
+    return url;
+  }
+
   Future<List<Place>> fetchNearbyPlaces(double lat, double lon, String categoryKey) async {
     final String placeType = categoryMap[categoryKey.toLowerCase()] ?? '';
     
-    if (placeType.isEmpty || placeType == 'favorite') {
-       // Si c'est 'Favoris' ou une catégorie non mappée
-       return Future.value([]); 
-    }
+    if (placeType.isEmpty || placeType == 'favorite') return [];
     
-    // Requête Nearby Search (rayon de 5000 mètres = 5 km)
-    final url = '$_baseUrl?location=$lat,$lon&radius=5000&type=$placeType&key=$_apiKey';
-    
-    if (_apiKey == 'VOTRE_CLE_API_GOOGLE_PLACES_ICI') {
-      throw Exception("Veuillez insérer votre clé API Google Places.");
-    }
+    String url = '$_baseUrl?location=$lat,$lon&radius=5000&type=$placeType&key=$_apiKey';
+    if (kIsWeb) url = 'https://cors-anywhere.herokuapp.com/$url';
     
     try {
-      final response = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 15));
+      final response = await http.get(Uri.parse(url));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -44,12 +50,18 @@ class PlacesService {
           final double itemLat = item['geometry']['location']['lat'] ?? 0.0;
           final double itemLon = item['geometry']['location']['lng'] ?? 0.0;
           
-          // ⚠️ CORRECTION: Récupération sécurisée du rating et conversion en double
           final dynamic rawRating = item['rating'];
-          final double rating = rawRating is int 
-                                ? rawRating.toDouble() 
-                                : rawRating is double ? rawRating : 0.0;
+          final double rating = rawRating is int ? rawRating.toDouble() : rawRating is double ? rawRating : 0.0;
           
+          // ⚠️ RÉCUPÉRATION DE LA PHOTO
+          String finalImageUrl = '';
+          if (item['photos'] != null && (item['photos'] as List).isNotEmpty) {
+            final String photoRef = item['photos'][0]['photo_reference'];
+            finalImageUrl = _buildPhotoUrl(photoRef);
+          } else {
+            finalImageUrl = item['icon'] ?? ''; // Fallback sur l'icône si pas de photo
+          }
+
           return Place(
             cityName: '', 
             title: item['name'] ?? 'Lieu Inconnu',
@@ -57,19 +69,36 @@ class PlacesService {
             category: placeType, 
             latitude: itemLat,
             longitude: itemLon,
-            imageUrl: item['icon'] ?? '', 
-            // Utilise la valeur sécurisée que nous venons de calculer
+            imageUrl: finalImageUrl, // On utilise notre vraie URL photo ici
             rating: rating, 
             noteCount: item['user_ratings_total'] ?? 0,
+            placeId: item['place_id'] ?? '', // On stocke l'ID pour plus tard
           );
         }).toList();
-
       } else {
-        print('Google Places Error: ${response.statusCode} - ${response.body}');
-        return Future.error('Échec de la recherche Google Places. Code: ${response.statusCode}');
+        return Future.error('Échec HTTP: ${response.statusCode}');
       }
     } catch (e) {
-      print('Network Error: $e');
-        return Future.error('Erreur réseau lors de la récupération des lieux.');}
+      return Future.error('Erreur réseau : $e');
+    }
+  }
+
+  // 2. NOUVELLE MÉTHODE : Récupérer plus de détails (Téléphone, Site Web, etc.)
+  Future<Map<String, dynamic>> fetchPlaceDetails(String placeId) async {
+    // On demande des champs spécifiques : formatted_phone_number, website, opening_hours
+    String url = '$_detailsUrl?place_id=$placeId&fields=formatted_phone_number,website,opening_hours&key=$_apiKey';
+    
+    if (kIsWeb) url = 'https://cors-anywhere.herokuapp.com/$url';
+
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['result'] ?? {};
+      }
+    } catch (e) {
+      print("Erreur détails: $e");
+    }
+    return {};
   }
 }

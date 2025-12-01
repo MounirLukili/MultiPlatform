@@ -2,7 +2,6 @@
 
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import '../models/city_model.dart';
 
 class WeatherService {
   // ⚠️ Remplacer par votre clé API OpenWeatherMap

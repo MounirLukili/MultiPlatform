@@ -1,25 +1,39 @@
-// main.dart for ExplorezVotreVille
-// Point d'entrée de l'application. Initialise les bindings et l'architecture (Provider, Thèmes).
+// lib/main.dart
 
+import 'dart:io'; // Pour vérifier si on est sur Desktop
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart'; // Pour kIsWeb
+import 'package:flutter/foundation.dart'; // Pour kIsWeb (Vérif Web)
 import 'package:provider/provider.dart';
+
+// Imports pour la base de données
+import 'package:sqflite_common_ffi/sqflite_ffi.dart'; 
+import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart'; // ⚠️ IMPORT INDISPENSABLE POUR LE WEB
 
 import 'screens/landing_screen.dart';
 import 'screens/main_page.dart'; 
-import 'screens/city_search_screen.dart'; // ⚠️ NOUVELLE IMPORTATION
+import 'screens/city_search_screen.dart';
 import 'providers/city_provider.dart'; 
-
-// Cette clé n'est plus utilisée pour la carte (FlutterMap), mais pourrait l'être pour d'autres services Google.
-const String googleMapsApiKey = "VOTRE_CLE_API_GOOGLE_MAPS_ICI"; 
+import 'providers/poi_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // ⚠️ CONFIGURATION CRITIQUE POUR LA BASE DE DONNÉES
   
+  if (kIsWeb) {
+    // 1. SI ON EST SUR CHROME (WEB)
+    // On force l'utilisation de la version Web (WASM)
+    databaseFactory = databaseFactoryFfiWeb;
+  } else if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    // 2. SI ON EST SUR ORDI (Windows/Mac/Linux)
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  }
+  // 3. SI ON EST SUR ANDROID/IOS : Rien à faire, c'est automatique.
+
   runApp(const ExplorezVotreVilleWrapper());
 }
 
-// Wrapper pour intégrer MultiProvider (Gestion d'état)
 class ExplorezVotreVilleWrapper extends StatelessWidget {
   const ExplorezVotreVilleWrapper({super.key});
 
@@ -28,6 +42,7 @@ class ExplorezVotreVilleWrapper extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => CityProvider()),
+        ChangeNotifierProvider(create: (_) => PoiProvider()),
       ],
       child: const ExplorezVotreVille(),
     );
@@ -53,11 +68,10 @@ class ExplorezVotreVille extends StatelessWidget {
       ),
       themeMode: ThemeMode.system, 
       initialRoute: '/',
-      // Configuration des routes nommées (Fonctionnalité 1.9)
       routes: {
         '/': (context) => const ExploreLandingScreen(), 
         '/main': (context) => const MainPage(), 
-        '/search_city': (context) => const CitySearchScreen(), // ⚠️ NOUVELLE ROUTE
+        '/search_city': (context) => const CitySearchScreen(),
       },
     );
   }

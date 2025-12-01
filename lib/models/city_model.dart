@@ -108,4 +108,34 @@ class City {
   String toString() {
     return 'City(id: $id, name: $name, country: $country, lat: $latitude, lon: $longitude, temp: ${currentTemp.round()}°, condition: $weatherCondition)';
   }
+
+  // Convertir une City en Map pour SQLite
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'country': country,
+      'latitude': latitude,
+      'longitude': longitude,
+    };
+  }
+
+  // Créer une City depuis SQLite
+  factory City.fromMap(Map<String, dynamic> map) {
+    return City(
+      id: map['id'],
+      name: map['name'],
+      country: map['country'],
+      latitude: map['latitude'],
+      longitude: map['longitude'],
+      // Valeurs par défaut pour la météo (sera rechargée par l'API)
+      currentTemp: 0.0,
+      minTemp: 0.0,
+      maxTemp: 0.0,
+      weatherCondition: 'Chargement...',
+      humidity: 0,
+      windSpeed: 0.0,
+    );
+  }
+
 }
