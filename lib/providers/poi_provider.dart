@@ -25,9 +25,10 @@ class PoiProvider with ChangeNotifier {
   }
 
   // C'est ici que tout se joue
-  Future<void> searchPois(double lat, double lon, String categoryKey) async {
+  Future<void> searchPois(double lat, double lon, String categoryKey, {bool forceRefresh = false}) async {
     // Si on reclique sur la même catégorie, on désactive
-    if (_activeCategory == categoryKey && _currentPois.isNotEmpty) {
+   // ⚠️ CORRECTION : On ne vide la liste QUE si ce n'est PAS un rafraichissement forcé
+    if (!forceRefresh && _activeCategory == categoryKey && _currentPois.isNotEmpty) {
       clearPois();
       return;
     }

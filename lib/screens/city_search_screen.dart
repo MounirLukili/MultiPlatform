@@ -2,10 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'dart:async'; // Pour utiliser Timer
+import 'dart:async';
 import '../providers/city_provider.dart';
 import '../models/city_model.dart';
-// Note: Pas besoin d'importer FlutterMap ou Lottie ici, car la MainPage gère l'affichage.
 
 class CitySearchScreen extends StatefulWidget {
   const CitySearchScreen({super.key});
@@ -17,27 +16,26 @@ class CitySearchScreen extends StatefulWidget {
 class _CitySearchScreenState extends State<CitySearchScreen> {
   final TextEditingController _controller = TextEditingController();
   Timer? _debounce;
+  
+  // ⚠️ NOUVEAU : Un "verrou" pour empêcher la boucle infinie
+  bool _isRedirecting = false;
 
-  // Déclenché à chaque frappe dans la barre de recherche
   void _onSearchChanged(String query) {
-    // Annule le timer précédent s'il existe
     if (_debounce?.isActive ?? false) _debounce!.cancel();
+    
+    // Si on change le texte, on "déverrouille" la redirection
+    if (_isRedirecting) {
+      setState(() => _isRedirecting = false);
+    }
 
-    // Démarrer un nouveau timer
     _debounce = Timer(const Duration(milliseconds: 500), () {
-      // Déclenche la recherche seulement après 500ms d'inactivité
       Provider.of<CityProvider>(context, listen: false).searchCity(query);
     });
   }
 
-  // Gère la sélection d'une ville dans les résultats
   Future<void> _selectCity(City city) async {
     final cityProvider = Provider.of<CityProvider>(context, listen: false);
-    
-    // 1. Définir la nouvelle ville (récupère la météo et notifie les listeners)
     await cityProvider.setCity(city);
-
-    // 2. Retourner à la page principale (Map)
     if (mounted) {
       Navigator.of(context).pop();
     }
@@ -45,7 +43,6 @@ class _CitySearchScreenState extends State<CitySearchScreen> {
 
   @override
   void dispose() {
-    // Annuler le timer et le controller de texte lors de la suppression du widget
     _debounce?.cancel();
     _controller.dispose();
     super.dispose();
@@ -53,15 +50,43 @@ class _CitySearchScreenState extends State<CitySearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Écoute les résultats et l'état de la recherche
     return Consumer<CityProvider>(
       builder: (context, cityProvider, child) {
+        
+        // ⚠️ LOGIQUE POINT 1.3 CORRIGÉE
+        // On vérifie les conditions pour l'auto-sélection
+        bool shouldAutoSelect = !cityProvider.isSearching && 
+                                cityProvider.searchResults.length == 1 && 
+                                _controller.text.isNotEmpty;
+
+        if (shouldAutoSelect) {
+          // Si on n'a pas encore lancé la redirection...
+          if (!_isRedirecting) {
+            _isRedirecting = true; // On verrouille immédiatement
+            
+            // On lance l'action APRÈS l'affichage de l'écran de chargement
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+               _selectCity(cityProvider.searchResults.first);
+            });
+          }
+          // On affiche le chargement (cela évite d'afficher la liste 1/10ème de seconde)
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        } else {
+          // Si on n'est plus dans le cas "1 seul résultat" (ex: on a effacé une lettre), on déverrouille
+          if (_isRedirecting) {
+             // On utilise un microtask pour éviter l'erreur "setState during build"
+             Future.microtask(() {
+               if (mounted) setState(() => _isRedirecting = false);
+             });
+          }
+        }
+
         return Scaffold(
           appBar: AppBar(
-            automaticallyImplyLeading: true, // Bouton retour
+            automaticallyImplyLeading: true, 
             title: TextField(
               controller: _controller,
-              autofocus: true, // Met le focus sur le champ de saisie à l'ouverture
+              autofocus: true,
               onChanged: _onSearchChanged,
               decoration: InputDecoration(
                 hintText: 'Entrez le nom d\'une ville...',
@@ -83,7 +108,6 @@ class _CitySearchScreenState extends State<CitySearchScreen> {
     );
   }
 
-  // Construit le corps de l'écran (résultats, messages d'erreur ou de chargement)
   Widget _buildBody(BuildContext context, CityProvider cityProvider) {
     if (cityProvider.isSearching) {
       return const Center(child: Text("Recherche en cours..."));
@@ -110,8 +134,6 @@ class _CitySearchScreenState extends State<CitySearchScreen> {
        return const Center(child: Text("Commencez à taper le nom d'une ville pour rechercher."));
     }
 
-
-    // Affichage des résultats
     return ListView.builder(
       itemCount: cityProvider.searchResults.length,
       itemBuilder: (context, index) {

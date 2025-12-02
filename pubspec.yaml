@@ -22,6 +22,7 @@ dependencies:
   lottie: ^3.0.0
   animated_text_kit: ^4.2.2
   google_fonts: ^4.0.3
+  dart_openai: ^5.1.0 # Ou un simple http si vous préférez, mais un package est plus propre
 
   # Location
   geolocator: ^10.1.0
@@ -31,6 +32,7 @@ dependencies:
   latlong2: ^0.9.1
   google_maps_flutter_web: ^0.5.4
   url_launcher: ^6.2.5 
+
 
   
 
@@ -47,6 +49,8 @@ dependencies:
   path: ^1.9.1
   sqflite_common_ffi: ^2.3.6
   sqflite_common_ffi_web: ^1.0.2
+  shared_preferences: ^2.5.3
+  geolocator_linux: ^0.2.3
 
 dev_dependencies:
   flutter_test:

@@ -3,87 +3,140 @@
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-
-// ⚠️ API Key Note: Pour la vraie géocodage inverse, il est courant d'utiliser
-// Google Maps Geocoding API ou Nominatim. Nous utiliserons Nominatim pour cet exemple
-// car il ne nécessite pas de clé API payante pour une utilisation basique.
+import 'dart:io'; 
+import 'package:flutter/foundation.dart';
 
 class GeolocService {
 
-  // Méthode pour demander l'autorisation de géolocalisation
+  // --- 1. GESTION DES PERMISSIONS (AVEC DEBUG) ---
   Future<LocationPermission> checkAndRequestPermission() async {
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    print("🔍 [DEBUG] Vérification du service de localisation...");
+    
+    bool serviceEnabled;
+    try {
+      serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      print("🔍 [DEBUG] Service activé : $serviceEnabled");
+    } catch (e) {
+      print("⚠️ [DEBUG] Impossible de vérifier le statut du service : $e");
+      serviceEnabled = true; // On assume que oui sur Linux pour ne pas bloquer
+    }
+
     if (!serviceEnabled) {
-      // Les services de localisation ne sont pas activés.
+      print("❌ [DEBUG] Le service est désactivé au niveau OS.");
       return Future.error('Location services are disabled.');
     }
 
+    print("🔍 [DEBUG] Vérification des permissions de l'app...");
     LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        // Les permissions sont refusées.
-        return Future.error('Location permissions are denied');
+    print("🔍 [DEBUG] Statut permission actuel : $permission");
+
+    if (permission == LocationPermission.denied || permission == LocationPermission.unableToDetermine) {
+      print("⚠️ [DEBUG] Permission manquante. Tentative de demande...");
+      try {
+        // Sur Linux, cette ligne renvoie souvent une erreur "Unimplemented", c'est normal.
+        // L'autorisation réelle se fait au moment de getCurrentPosition via l'Agent.
+        permission = await Geolocator.requestPermission();
+        print("🔍 [DEBUG] Résultat de la demande : $permission");
+      } catch (e) {
+        print("🐧 [DEBUG] requestPermission() non supporté sur cette plateforme (Linux probable). On continue.");
+        // On retourne une valeur positive pour laisser passer la suite
+        return LocationPermission.whileInUse;
       }
     }
 
     if (permission == LocationPermission.deniedForever) {
-      // Les permissions sont refusées de manière permanente.
-      return Future.error('Location permissions are permanently denied, we cannot request permissions.');
+      print("❌ [DEBUG] Permission refusée définitivement.");
+      return Future.error('Location permissions are permanently denied.');
     }
+    
     return permission;
   }
 
-  // Méthode pour obtenir la position GPS actuelle
+  // --- 2. RÉCUPÉRATION DE LA POSITION (LE COEUR DU PROBLÈME) ---
   Future<Position> getCurrentPosition() async {
-    // ⚠️ Ajout d'un timeout sur la récupération de la position pour éviter le blocage
-    return await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
-      timeLimit: const Duration(seconds: 10)
-    );
+    print("----------------------------------------------------------------");
+    print("🚀 [DEBUG] Démarrage de getCurrentPosition()...");
+
+    // 1. Test du Cache
+    try {
+      print("🕵️ [DEBUG] Interrogation du cache (LastKnownPosition)...");
+      Position? lastPosition = await Geolocator.getLastKnownPosition();
+      if (lastPosition != null) {
+        print("✅ [DEBUG] CACHE TROUVÉ !");
+        print("   -> Lat: ${lastPosition.latitude}, Lon: ${lastPosition.longitude}");
+        print("   -> Date: ${lastPosition.timestamp}");
+        return lastPosition;
+      } else {
+        print("⚠️ [DEBUG] Cache vide.");
+      }
+    } catch (e) {
+      print("⚠️ [DEBUG] Erreur lecture cache : $e");
+    }
+
+    // 2. Définition de la précision
+    // Essayons 'low' pour voir si Linux arrive à nous trouver via l'IP
+    LocationAccuracy accuracy = LocationAccuracy.low; 
+    
+    if (!kIsWeb && Platform.isLinux) {
+      print("🐧 [DEBUG] Mode Linux détecté.");
+      print("ℹ️ [DEBUG] Utilisation de LocationAccuracy.low (Précision Ville/IP) pour maximiser les chances.");
+    } else {
+      accuracy = LocationAccuracy.high;
+    }
+
+    // 3. Appel bloquant au système
+    print("📡 [DEBUG] Appel à Geolocator.getCurrentPosition(accuracy: $accuracy)...");
+    print("⏳ [DEBUG] En attente de la réponse de GeoClue (Linux)...");
+
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: accuracy,
+        timeLimit: const Duration(seconds: 15) // Timeout 15s
+      );
+      
+      print("----------------------------------------------------------------");
+      print("✅ [DEBUG] 📍 POSITION REÇUE AVEC SUCCÈS !");
+      print("   -> Latitude  : ${position.latitude}");
+      print("   -> Longitude : ${position.longitude}");
+      print("   -> Précision : ${position.accuracy} mètres");
+      print("   -> Altitude  : ${position.altitude}");
+      print("   -> Vitesse   : ${position.speed}");
+      print("----------------------------------------------------------------");
+      
+      return position;
+
+    } catch (e) {
+      print("----------------------------------------------------------------");
+      print("❌ [DEBUG] ÉCHEC DE LA LOCALISATION");
+      print("   -> Erreur exacte : $e");
+      print("----------------------------------------------------------------");
+      throw e;
+    }
   }
 
-  // Méthode pour faire de la géocodage inverse (coordonnées -> ville/pays)
-  // Utilisation de l'API Nominatim (OpenStreetMap)
+  // --- 3. REVERSE GEOCODING (Inchangé) ---
   Future<Map<String, dynamic>> reverseGeocode(double lat, double lon) async {
     final url = 'https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lon&zoom=10&addressdetails=1';
+    print("🌍 [DEBUG] Reverse Geocoding pour $lat, $lon...");
     
     try {
-      // ⚠️ Ajout du User-Agent et d'un Timeout sur la requête HTTP
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          // Ceci est OBLIGATOIRE pour Nominatim lorsqu'on appelle depuis une application
-          'User-Agent': 'ExplorezVotreVilleFlutterApp/1.0', 
-        },
-      ).timeout(const Duration(seconds: 8)); // Timeout de 8 secondes
+      final response = await http.get(Uri.parse(url), headers: {'User-Agent': 'ExplorezVotreVilleFlutterApp/1.0'})
+          .timeout(const Duration(seconds: 8));
       
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        print("✅ [DEBUG] Ville trouvée : ${data['address']['city'] ?? data['address']['town']}");
         final address = data['address'];
         final city = address['city'] ?? address['town'] ?? address['village'] ?? 'Inconnue';
         final country = address['country'] ?? 'N/A';
-        
-        // Vérification supplémentaire si le géocodage n'a rien trouvé de pertinent
-        if (city == 'Inconnue') {
-          print('Géocodage inverse: Ville non trouvée, renvoie Inconnue.');
-          return Future.error('Ville non trouvée. Coordonnées trop éloignées d\'une zone urbaine connue.');
-        }
-
-        return {
-          'city': city,
-          'country': country,
-          'latitude': lat,
-          'longitude': lon,
-        };
+        return {'city': city, 'country': country, 'latitude': lat, 'longitude': lon};
       } else {
-        print('Erreur lors de la géocodage inverse: ${response.statusCode} - ${response.body}');
-        return Future.error('Failed to reverse geocode location. (HTTP Code: ${response.statusCode})');
+        print("❌ [DEBUG] Erreur API Nominatim : ${response.statusCode}");
+        return Future.error('Failed to reverse geocode.');
       }
     } catch (e) {
-      // Gère les erreurs réseau, les timeouts, et les erreurs de parsing JSON
-      print('Erreur réseau lors de la géocodage inverse: $e');
-      return Future.error('Network error or Timeout during reverse geocoding: ${e.toString()}');
+      print("❌ [DEBUG] Erreur Réseau Geocoding : $e");
+      return Future.error('Network error during reverse geocoding.');
     }
   }
 }

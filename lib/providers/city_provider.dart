@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../models/city_model.dart';
 import '../services/geoloc_service.dart';
 import '../services/weather_service.dart';
+import '../services/database_service.dart'; // ⚠️ NOUVEL IMPORT
 import '../services/city_search_service.dart'; // ⚠️ NOUVELLE IMPORTATION
 
 class CityProvider with ChangeNotifier {
@@ -18,6 +19,8 @@ class CityProvider with ChangeNotifier {
   // ⚠️ Nouvelles variables pour la recherche
   List<City> _searchResults = [];
   bool _isSearching = false;
+
+  
 
   City? get currentCity => _currentCity;
   bool get isLoading => _isLoading;
@@ -48,7 +51,7 @@ class CityProvider with ChangeNotifier {
         longitude: lon,
       );
 
-      await _fetchWeatherForCity(city);
+      await _fetchWeatherAndSave(city);
 
     } catch (e) {
       _errorMessage = 'Erreur: ${e.toString()}';
@@ -59,8 +62,15 @@ class CityProvider with ChangeNotifier {
     }
   }
 
-  // 2. Récupère la météo et met à jour la ville actuelle (inchangé)
-  Future<void> _fetchWeatherForCity(City city) async {
+  Future<void> setCity(City city) async {
+    _isLoading = true;
+    notifyListeners();
+    await _fetchWeatherAndSave(city); // ⚠️ APPEL MODIFIÉ
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  Future<void> _fetchWeatherAndSave(City city) async {
     try {
       final weatherData = await _weatherService.fetchWeather(city.latitude, city.longitude);
 
@@ -72,29 +82,21 @@ class CityProvider with ChangeNotifier {
         humidity: weatherData['humidity'],
         windSpeed: weatherData['windSpeed'],
       );
-      // ⚠️ Important : Si la ville actuelle change, nous devons zoomer la carte
-      // Pour l'instant, on laisse la logique de zoom sur la MainPage.
+
+      // SAUVEGARDE AUTOMATIQUE DANS SQLITE
+      await DatabaseService.instance.insertCity(_currentCity!);
+      
     } catch (e) {
       _currentCity = city; 
-      _errorMessage = 'Météo non disponible: ${e.toString()}';
-      print('Weather Fetch Error: $_errorMessage');
+      _errorMessage = 'Météo non disponible.';
+      // On sauvegarde quand même la ville même sans météo
+      await DatabaseService.instance.insertCity(_currentCity!);
     }
   }
 
-  // 3. Permet de définir une ville manuellement (utilisée après une recherche)
-  // et de la définir comme ville courante.
-  Future<void> setCity(City city) async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
+  
 
-    // Récupération de la météo pour la nouvelle ville (nécessaire pour avoir les détails météo)
-    await _fetchWeatherForCity(city);
-
-    _isLoading = false;
-    // La météo est déjà mise à jour dans _currentCity, notifions l'UI
-    notifyListeners();
-  }
+  
 
   // ⚠️ 4. Nouvelle méthode de recherche de ville (Fonctionnalité 1.3)
   Future<void> searchCity(String query) async {

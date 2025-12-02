@@ -101,4 +101,64 @@ class PlacesService {
     }
     return {};
   }
+
+  Future<Place?> searchPlaceByText(String query, double lat, double lon) async {
+    // On utilise l'endpoint 'textsearch'
+    String url = 'https://maps.googleapis.com/maps/api/place/textsearch/json?query=$query&location=$lat,$lon&radius=10000&key=$_apiKey';
+    
+    if (kIsWeb) url = 'https://cors-anywhere.herokuapp.com/$url';
+
+    try {
+      final response = await http.get(Uri.parse(url));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final results = data['results'] as List;
+
+        if (results.isNotEmpty) {
+          final item = results.first; // On prend le premier résultat (le plus pertinent)
+          
+          final double itemLat = item['geometry']['location']['lat'];
+          final double itemLon = item['geometry']['location']['lng'];
+          
+          // Récupération photo
+          String finalImageUrl = '';
+          if (item['photos'] != null && (item['photos'] as List).isNotEmpty) {
+            finalImageUrl = _buildPhotoUrl(item['photos'][0]['photo_reference']);
+          } else {
+            finalImageUrl = item['icon'] ?? '';
+          }
+
+          // Tentative de deviner la catégorie (Google -> Notre App)
+          String detectedCategory = 'Autre';
+          final List<dynamic> types = item['types'] ?? [];
+          
+          if (types.contains('museum')) {
+            detectedCategory = 'Musée';
+          } else if (types.contains('park')) detectedCategory = 'Parc';
+          else if (types.contains('stadium')) detectedCategory = 'Stade';
+          else if (types.contains('restaurant') || types.contains('food')) detectedCategory = 'Restaurant';
+          else if (types.contains('cafe')) detectedCategory = 'Café';
+          else if (types.contains('movie_theater')) detectedCategory = 'Cinéma';
+
+          return Place(
+            placeId: item['place_id'],
+            cityName: '', // Sera rempli par le contexte
+            title: item['name'],
+            description: item['formatted_address'] ?? '',
+            category: detectedCategory,
+            latitude: itemLat,
+            longitude: itemLon,
+            imageUrl: finalImageUrl,
+            rating: (item['rating'] as num?)?.toDouble() ?? 0.0,
+            noteCount: item['user_ratings_total'] ?? 0,
+          );
+        }
+      }
+    } catch (e) {
+      print("Erreur recherche textuelle: $e");
+    }
+    return null; // Rien trouvé
+  }
+
 }
