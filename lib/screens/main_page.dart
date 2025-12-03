@@ -6,7 +6,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:lottie/lottie.dart' hide Marker;
 import 'dart:async';
-import 'dart:ui';
+import 'dart:ui'; // Indispensable pour l'effet de flou
 
 import '../providers/city_provider.dart';
 import '../providers/poi_provider.dart';
@@ -79,9 +79,8 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
     return 'assets/wind.json';
   }
 
-  // Dans _MainPageState
-
-  void _openAddPlaceDialog(LatLng location, {bool disableSearch = false}) { // ⚠️ Ajout paramètre
+  // GESTION INTELLIGENTE DE L'AJOUT
+  void _openAddPlaceDialog(LatLng location, {bool disableSearch = false}) {
     final currentCity = Provider.of<CityProvider>(context, listen: false).currentCity;
     final String cityName = currentCity?.name ?? 'Ville Inconnue';
 
@@ -90,7 +89,7 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
       builder: (ctx) => AddPlaceDialog(
         location: location, 
         cityName: cityName,
-        disableSearch: disableSearch, // ⚠️ On passe l'info au dialogue
+        disableSearch: disableSearch,
       ),
     ).then((added) {
       if (added == true) {
@@ -99,18 +98,17 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
     });
   }
 
- Future<void> _navigateToDetail(Place place) async {
+  // NAVIGATION "HERO" MAGNIFIQUE
+  Future<void> _navigateToDetail(Place place) async {
     await Navigator.of(context).push(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) => PlaceDetailScreen(place: place),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          // On applique un léger Fade en plus du Hero pour le reste de la page
           return FadeTransition(
             opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut), 
             child: child
           );
         },
-        // ⚠️ DUREE & COURBE "MAGNIFIQUE"
         transitionDuration: const Duration(milliseconds: 700),
         reverseTransitionDuration: const Duration(milliseconds: 600),
       ),
@@ -123,11 +121,12 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
       context: context,
       builder: (ctx) {
         final themeProvider = Provider.of<ThemeProvider>(context);
+        final isDark = themeProvider.themeMode == ThemeMode.dark;
         return AlertDialog(
           title: const Text("Paramètres"),
           content: SwitchListTile(
             title: const Text("Mode Sombre"),
-            value: themeProvider.themeMode == ThemeMode.dark,
+            value: isDark,
             onChanged: (val) => themeProvider.toggleTheme(val),
           ),
           actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Fermer"))],
@@ -138,7 +137,7 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
 
   // --- WIDGETS UI ---
 
-  // 1. BARRE DE RECHERCHE (Top Center)
+  // 1. BARRE DE RECHERCHE
   Widget _buildSearchBar(BuildContext context) {
     return Positioned(
       top: 50, left: 16, right: 16,
@@ -150,7 +149,7 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
             height: 55,
             padding: const EdgeInsets.symmetric(horizontal: 15),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.6), // Fond sombre translucide
+              color: Colors.black.withOpacity(0.6),
               borderRadius: BorderRadius.circular(30),
               border: Border.all(color: Colors.white.withOpacity(0.1)),
               boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 4))],
@@ -184,12 +183,9 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
     );
   }
 
-  // 2. LISTE DES CATÉGORIES (Juste sous la barre de recherche)
- // Dans lib/screens/main_page.dart
-
+  // 2. LISTE DES CATÉGORIES
   Widget _buildCategoriesList(BuildContext context, City city) {
     final categories = [
-      // ✅ On garde le bouton Favoris
       {'key': 'favoris', 'icon': Icons.favorite, 'color': Colors.red, 'label': 'Favoris'},
       {'key': 'manger', 'icon': Icons.restaurant, 'color': Colors.orange, 'label': 'Manger'},
       {'key': 'cafés', 'icon': Icons.local_cafe, 'color': Colors.brown, 'label': 'Cafés'},
@@ -216,14 +212,8 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
                 final isSelected = poiProvider.activeCategory == cat['key'];
                 return GestureDetector(
                   onTap: () {
-                    // ⚠️ MODIFICATION ICI : On passe cityName: city.name
-                    // Le Provider utilisera ce nom pour filtrer les favoris si la catégorie est "favoris"
-                    poiProvider.searchPois(
-                      city.latitude, 
-                      city.longitude, 
-                      cat['key'] as String,
-                      cityName: city.name 
-                    );
+                    // On passe cityName pour filtrer les favoris correctement si nécessaire
+                    poiProvider.searchPois(city.latitude, city.longitude, cat['key'] as String, cityName: city.name);
                     setState(() => _showCarousel = !isSelected);
                   },
                   child: AnimatedContainer(
@@ -256,12 +246,10 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
       ),
     );
   }
-  // Design "Tuile" propre et lisible
-// 3. WIDGET MÉTÉO FLOTTANT (Horizontal & Réactif)
+
+  // 3. WIDGET MÉTÉO (Horizontal & Réactif)
   Widget _buildWeatherWidget(BuildContext context, City city) {
-    // Calcul de la largeur : On augmente la largeur pour le layout horizontal
     final double screenWidth = MediaQuery.of(context).size.width;
-    // Plus large que la version verticale : 280 sur petit écran, 320 sur grand
     final double widgetWidth = screenWidth < 600 ? 280.0 : 320.0;
 
     return Positioned(
@@ -272,7 +260,7 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(
             width: widgetWidth,
-            padding: const EdgeInsets.all(15), // Padding confortable
+            padding: const EdgeInsets.all(15),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
@@ -283,12 +271,10 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
               border: Border.all(color: Colors.white.withOpacity(0.15)),
               boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 8))],
             ),
-            // C'EST ICI QUE ÇA CHANGE : Row au lieu de Column
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.center, // Centre verticalement
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // --- PARTIE GAUCHE : VILLE & TEMPÉRATURE ---
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -307,7 +293,6 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
                         style: const TextStyle(color: Colors.amber, fontSize: 13, fontWeight: FontWeight.w500),
                       ),
                       const SizedBox(height: 5),
-                      // Grosse Température
                       Text(
                         '${city.currentTemp.round()}°',
                         style: const TextStyle(color: Colors.white, fontSize: 38, fontWeight: FontWeight.w300),
@@ -315,21 +300,16 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
                     ],
                   ),
                 ),
-
-                const SizedBox(width: 15), // Espace entre gauche et droite
-
-                // --- PARTIE DROITE : ICÔNE & DÉTAILS ---
+                const SizedBox(width: 15),
                 Column(
                   mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.end, //Aligné à droite
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    // Icône Lottie (un peu plus grande)
                     SizedBox(
                       height: 50, width: 50,
                       child: Lottie.asset(_getWeatherAssetPath(city.weatherCondition), fit: BoxFit.contain),
                     ),
                     const SizedBox(height: 10),
-                    // Les petits détails en ligne en dessous de l'icône
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -350,7 +330,6 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
     );
   }
 
-  // Helper légèrement simplifié pour le mode horizontal (sans le label du dessous pour gagner de la place)
   Widget _weatherMiniInfo(IconData icon, String val) {
     return Column(
       children: [
@@ -361,20 +340,15 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
     );
   }
 
-  // 4. LISTE DES FAVORIS
- // 4. LISTE DES FAVORIS (IMMERSIVE & CORRIGÉE)
+  // 4. LISTE DES FAVORIS (IMMERSIVE)
   Widget _buildLocalFavoritesList(BuildContext context, City city) {
     if (_showCarousel) return const SizedBox.shrink();
 
     return Positioned(
-      bottom: 20, // Un peu plus bas pour coller au bas de l'écran
-      left: 0, 
-      right: 0, 
-      height: 240, // Hauteur augmentée pour éviter tout overflow
+      bottom: 20, left: 0, right: 0, height: 240,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // TITRE AVEC FOND GLASS (Plus lisible sur la carte)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             child: ClipRRect(
@@ -383,23 +357,15 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
                 filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(15),
-                  ),
+                  decoration: BoxDecoration(color: Colors.black.withOpacity(0.5), borderRadius: BorderRadius.circular(15)),
                   child: Row(
-                    mainAxisSize: MainAxisSize.min, // Prend juste la place nécessaire
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.bookmark, color: Colors.amber, size: 18),
+                      const Icon(Icons.history_edu, color: Colors.amber, size: 18),
                       const SizedBox(width: 8),
                       Text(
                         "Carnet de voyage : ${city.name}",
-                        style: const TextStyle(
-                          fontSize: 14, 
-                          fontWeight: FontWeight.bold, 
-                          color: Colors.white,
-                          letterSpacing: 0.5
-                        ),
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.5),
                       ),
                     ],
                   ),
@@ -407,8 +373,6 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
               ),
             ),
           ),
-          
-          // LISTE DES CARTES
           Expanded(
             child: FutureBuilder<List<Place>>(
               key: ValueKey(_refreshKey),
@@ -419,15 +383,8 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
                     child: Container(
                       margin: const EdgeInsets.symmetric(horizontal: 20),
                       padding: const EdgeInsets.all(15),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.6), 
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white12)
-                      ),
-                      child: const Text(
-                        "Aucun lieu visité ici. Commencez l'exploration !", 
-                        style: TextStyle(color: Colors.white70, fontStyle: FontStyle.italic)
-                      ),
+                      decoration: BoxDecoration(color: Colors.black.withOpacity(0.6), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white12)),
+                      child: const Text("Aucun lieu visité ici. Commencez l'exploration !", style: TextStyle(color: Colors.white70, fontStyle: FontStyle.italic)),
                     ),
                   );
                 }
@@ -448,13 +405,13 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
       ),
     );
   }
- @override
+
+  @override
   Widget build(BuildContext context) {
     return Consumer<CityProvider>(
       builder: (context, cityProvider, child) {
         final City? city = cityProvider.currentCity;
 
-        // Gestion du mouvement de caméra lors du changement de ville
         if (city != null) {
           final String currentCityId = city.id;
           if (_previousCityId != currentCityId) {
@@ -472,17 +429,14 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
         return Scaffold(
           key: _scaffoldKey,
           drawer: const CityDrawer(),
-          
-          // --- BOUTONS FLOTTANTS ALIGNÉS & STYLISÉS ---
           floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
           floatingActionButton: Padding(
-            // On remonte un peu car les boutons sont plus grands maintenant
-            padding: const EdgeInsets.only(bottom: 250), 
+            padding: const EdgeInsets.only(bottom: 250),
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.end, // Tout aligné à droite
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                // 1. BOUTON IA (Style: Sombre/Ambre)
+                // 1. IA
                 FloatingActionButton(
                   heroTag: "btn_ai", 
                   onPressed: () async {
@@ -492,15 +446,14 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
                       _navigateToDetail(result);
                     }
                   },
-                  backgroundColor: Colors.black87, // Rappel du fond sombre
-                  foregroundColor: Colors.amber,   // Rappel de l'accent
+                  backgroundColor: Colors.black87,
+                  foregroundColor: Colors.amber,
                   elevation: 4,
                   child: const Icon(Icons.auto_awesome),
                 ),
+                const SizedBox(height: 16),
                 
-                const SizedBox(height: 16), // Espacement uniforme
-                
-                // 2. BOUTON PARAMÈTRES (Style: Sombre/Ambre)
+                // 2. SETTINGS
                 FloatingActionButton(
                   heroTag: "btn_settings",
                   onPressed: _showSettingsDialog,
@@ -509,16 +462,15 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
                   elevation: 4,
                   child: const Icon(Icons.settings),
                 ),
-                
                 const SizedBox(height: 16),
                 
-                // 3. BOUTON AJOUT (Principal - Style: Ambre/Noir comme "Commencer")
+                // 3. AJOUT
                 FloatingActionButton(
                   heroTag: "btn_add",
-                  onPressed: () => _openAddPlaceDialog(mapController.camera.center),
+                  onPressed: () => _openAddPlaceDialog(mapController.camera.center, disableSearch: false),
                   backgroundColor: Colors.amber,
                   foregroundColor: Colors.black,
-                  elevation: 6, // Un peu plus haut pour montrer l'importance
+                  elevation: 6,
                   child: const Icon(Icons.add_location_alt),
                 ),
               ],
@@ -527,7 +479,6 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
 
           body: Stack(
             children: [
-              // 1. CARTE
               Consumer<PoiProvider>(
                 builder: (context, poiProvider, child) {
                   return FlutterMap(
@@ -535,11 +486,32 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
                     options: MapOptions(
                       initialCenter: LatLng(city.latitude, city.longitude),
                       initialZoom: 13.0,
-                      onLongPress: (_, point) => _openAddPlaceDialog(point, disableSearch: true), // ⚠️ Mode Custom Pin                      onPositionChanged: _onMapPositionChanged, 
+                      onLongPress: (_, point) => _openAddPlaceDialog(point, disableSearch: true),
+                      onPositionChanged: _onMapPositionChanged, 
                       interactionOptions: const InteractionOptions(flags: InteractiveFlag.all & ~InteractiveFlag.rotate),
                     ),
                     children: [
-                      TileLayer(urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', userAgentPackageName: 'com.example.explorez_votre_ville'),
+                      // ⚠️ CARTE AVEC FILTRE DARK MODE "NÉGATIF"
+                      TileLayer(
+                        urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        userAgentPackageName: 'com.example.explorez_votre_ville',
+                        tileBuilder: (context, widget, tile) {
+                          final isDark = Theme.of(context).brightness == Brightness.dark;
+                          if (isDark) {
+                            return ColorFiltered(
+                              colorFilter: const ColorFilter.matrix([
+                                // Inversion des couleurs (Négatif) pour un effet sombre
+                                -1,  0,  0, 0, 255,
+                                 0, -1,  0, 0, 255,
+                                 0,  0, -1, 0, 255,
+                                 0,  0,  0, 1,   0,
+                              ]),
+                              child: widget,
+                            );
+                          }
+                          return widget;
+                        },
+                      ),
                       MarkerLayer(
                         markers: poiProvider.currentPois.map((p) => Marker(
                           point: LatLng(p.latitude, p.longitude),
@@ -554,14 +526,10 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
                   );
                 },
               ),
-
-              // 2. INTERFACE UTILISATEUR
               _buildSearchBar(context),
               _buildCategoriesList(context, city),
               _buildWeatherWidget(context, city),
               _buildLocalFavoritesList(context, city),
-
-              // 3. CAROUSEL POI
               Consumer<PoiProvider>(
                 builder: (context, poiProvider, child) {
                   if (_showCarousel && poiProvider.currentPois.isNotEmpty) {
@@ -577,8 +545,6 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
                   return const SizedBox.shrink();
                 },
               ),
-
-              // 4. SNACKBAR ERREURS
               Consumer<PoiProvider>(
                 builder: (context, poiProvider, child) {
                    if (poiProvider.errorMessage != null) {
@@ -607,75 +573,94 @@ class _AnimatedPlaceCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 200, 
-        margin: const EdgeInsets.only(right: 15, bottom: 10, top: 5),
+        width: 180, 
+        margin: const EdgeInsets.only(right: 15, bottom: 10), 
         decoration: BoxDecoration(
-          color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 5))],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 5))],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              flex: 3,
-              // ⚠️ LE HERO EST ICI (MAGNIFIQUE)
-              // Il enveloppe le ClipRRect pour animer la transformation des coins (Rond -> Carré)
-              child: Hero(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Hero(
                 tag: 'place-img-${place.title}',
                 transitionOnUserGestures: true,
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      // 1. IMAGE
-                      place.imageUrl.isNotEmpty 
-                        ? Image.network(place.imageUrl, fit: BoxFit.cover, errorBuilder: (_,__,___) => Container(color: Colors.grey.shade200))
-                        : Container(color: Colors.grey.shade200, child: const Icon(Icons.image, color: Colors.grey)),
-                      
-                      // 2. BADGE NOTE (Inclus dans le Hero : il disparaitra en fondu pendant le vol)
-                      Positioned(
-                        top: 8, right: 8,
-                        child: Material( // Material nécessaire pour éviter le texte jaune "souligné" pendant le vol
-                          color: Colors.transparent,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.star, size: 12, color: Colors.amber),
-                                const SizedBox(width: 4),
-                                Text(place.rating.toString(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10)),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                child: place.imageUrl.isNotEmpty 
+                  ? Image.network(place.imageUrl, fit: BoxFit.cover, errorBuilder: (_,__,___) => Container(color: Colors.grey.shade800))
+                  : Container(color: Colors.grey.shade800, child: const Icon(Icons.image, color: Colors.white24, size: 50)),
+              ),
+              
+              Positioned(
+                bottom: 0, left: 0, right: 0, height: 100,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Colors.transparent, Colors.black.withOpacity(0.9)],
+                    ),
                   ),
                 ),
               ),
-            ),
-            
-            // INFOS (Restent fixes, ne volent pas)
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
+
+              Positioned(
+                bottom: 12, left: 12, right: 12,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(place.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                    Text(
+                      place.title, 
+                      maxLines: 1, 
+                      overflow: TextOverflow.ellipsis, 
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white, shadows: [Shadow(color: Colors.black, blurRadius: 4)])
+                    ),
                     const SizedBox(height: 4),
-                    Text(place.category.toUpperCase(), style: TextStyle(fontSize: 10, color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold)),
+                    Row(
+                      children: [
+                        const Icon(Icons.category, color: Colors.amber, size: 12),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            place.category.toUpperCase(), 
+                            style: const TextStyle(fontSize: 10, color: Colors.white70, fontWeight: FontWeight.w600),
+                            maxLines: 1, overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
-            ),
-          ],
+
+              Positioned(
+                top: 10, right: 10,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      color: Colors.black.withOpacity(0.4),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.star, size: 12, color: Colors.amber),
+                          const SizedBox(width: 4),
+                          Material(
+                            color: Colors.transparent,
+                            child: Text(place.rating.toString(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.white)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
