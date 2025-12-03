@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import '../models/place_model.dart';
 import '../services/places_service.dart';
-import '../services/database_service.dart'; // ⚠️ Import de la base de données
+import '../services/database_service.dart';
 
 class PoiProvider with ChangeNotifier {
   final PlacesService _placesService = PlacesService();
@@ -24,10 +24,9 @@ class PoiProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // C'est ici que tout se joue
-  Future<void> searchPois(double lat, double lon, String categoryKey, {bool forceRefresh = false}) async {
-    // Si on reclique sur la même catégorie, on désactive
-   // ⚠️ CORRECTION : On ne vide la liste QUE si ce n'est PAS un rafraichissement forcé
+  // ⚠️ MODIFICATION : On ajoute le paramètre optionnel [cityName]
+  Future<void> searchPois(double lat, double lon, String categoryKey, {bool forceRefresh = false, String? cityName}) async {
+    
     if (!forceRefresh && _activeCategory == categoryKey && _currentPois.isNotEmpty) {
       clearPois();
       return;
@@ -41,31 +40,33 @@ class PoiProvider with ChangeNotifier {
     try {
       List<Place> fetchedPois = [];
 
-      // ⚠️ LOGIQUE DE TRI : LOCAL (SQLite) vs DISTANT (API)
+      // ⚠️ LOGIQUE DE FILTRE
       if (categoryKey.toLowerCase() == 'favoris') {
-        print("🔍 Recherche des favoris dans SQLite...");
-        // On récupère les lieux stockés localement
-        fetchedPois = await DatabaseService.instance.getAllPlaces();
+        print("🔍 Recherche des favoris...");
+        if (cityName != null) {
+          // Si on a un nom de ville, on ne charge que ceux-là !
+          fetchedPois = await DatabaseService.instance.getPlacesForCity(cityName);
+        } else {
+          // Sinon on charge tout (sécurité)
+          fetchedPois = await DatabaseService.instance.getAllPlaces();
+        }
         
         if (fetchedPois.isEmpty) {
-          _errorMessage = "Aucun lieu favori enregistré pour le moment.";
+          _errorMessage = "Aucun favori trouvé à $cityName.";
         }
       } else {
-        // Pour les autres catégories (Manger, Culture...), on appelle Google Places
-        print("🌍 Recherche API Google pour : $categoryKey");
+        // Recherche API Google normale
         fetchedPois = await _placesService.fetchNearbyPlaces(lat, lon, categoryKey);
         
         if (fetchedPois.isEmpty) {
-          _errorMessage = "Aucun lieu trouvé pour '$categoryKey' autour de vous.";
+          _errorMessage = "Aucun lieu trouvé pour '$categoryKey'.";
         }
       }
 
       _currentPois = fetchedPois;
-      print('✅ POI chargés : ${_currentPois.length} lieux.');
 
     } catch (e) {
-      _errorMessage = 'Erreur lors de la récupération : ${e.toString()}';
-      print('PoiProvider Error: $_errorMessage');
+      _errorMessage = 'Erreur : ${e.toString()}';
       _currentPois = [];
       _activeCategory = null; 
     } finally {

@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
+import 'dart:ui';
 import '../models/place_model.dart';
 import '../services/database_service.dart';
 import '../services/geoloc_service.dart';
@@ -11,12 +12,14 @@ class AddPlaceDialog extends StatefulWidget {
   final LatLng location;
   final String cityName;
   final Place? placeToEdit;
+  final bool disableSearch; // ⚠️ NOUVEAU PARAMÈTRE
 
   const AddPlaceDialog({
     super.key, 
     required this.location, 
     required this.cityName,
     this.placeToEdit,
+    this.disableSearch = false, // Par défaut, la recherche est active
   });
 
   @override
@@ -31,75 +34,72 @@ class _AddPlaceDialogState extends State<AddPlaceDialog> {
   late TextEditingController _nameController;
   late String _selectedCategory;
   
-  // Localisation
   late double _currentLat;
   late double _currentLng;
-  
-  // ⚠️ NOUVEAU : Variables pour stocker les infos riches récupérées
   String _fetchedImageUrl = '';
   double _fetchedRating = 0.0;
   int _fetchedNoteCount = 0;
-  String _googlePlaceId = ''; // On garde le vrai ID Google si trouvé
-
+  String _googlePlaceId = '';
+  
   bool _isFetching = false;
-  String _addressPreview = "Position sélectionnée sur la carte";
+  String _addressPreview = "Position sélectionnée";
 
-  final List<String> _categories = [
-    'Musée', 'Salle de concert', 'Théâtre', 'Cinéma', 
-    'Parc', 'Stade', 'Restaurant', 'Café', 'Autre'
-  ];
+  final Map<String, IconData> _categories = {
+    'Manger': Icons.restaurant,
+    'Café': Icons.local_cafe,
+    'Musée': Icons.museum,
+    'Parc': Icons.park,
+    'Shopping': Icons.shopping_bag,
+    'Hôtel': Icons.hotel,
+    'Santé': Icons.local_pharmacy,
+    'Autre': Icons.bookmark,
+  };
 
   @override
   void initState() {
     super.initState();
-    
     _currentLat = widget.location.latitude;
     _currentLng = widget.location.longitude;
 
     if (widget.placeToEdit != null) {
-      // Mode Édition : On reprend tout ce qu'on a déjà
       _nameController = TextEditingController(text: widget.placeToEdit!.title);
-      _selectedCategory = _categories.contains(widget.placeToEdit!.category) 
-          ? widget.placeToEdit!.category 
-          : 'Autre';
+      _selectedCategory = widget.placeToEdit!.category;
       _addressPreview = widget.placeToEdit!.description;
-      
-      // ⚠️ On initialise avec les valeurs existantes
       _fetchedImageUrl = widget.placeToEdit!.imageUrl;
       _fetchedRating = widget.placeToEdit!.rating;
       _fetchedNoteCount = widget.placeToEdit!.noteCount;
-      
     } else {
-      // Mode Création
       _nameController = TextEditingController();
       _selectedCategory = 'Autre';
-      // On cherche l'adresse par défaut (Reverse Geocoding)
+      // Si on vient d'un clic long, on cherche l'adresse tout de suite
       _fetchAddressFromCoordinates();
     }
   }
 
-  // Chercher adresse depuis coordonnées (Mode "Sélection Carte")
   Future<void> _fetchAddressFromCoordinates() async {
-    // Si on a déjà une image (donc un lieu Google identifié), on ne refait pas de géocodage inverse basique
     if (_fetchedImageUrl.isNotEmpty) return;
-
     setState(() => _isFetching = true);
     try {
       final data = await _geolocService.reverseGeocode(_currentLat, _currentLng);
       if (mounted) {
         setState(() {
-          _addressPreview = "Adresse : ${data['city']}"; 
+          // On affiche une adresse propre
+          final address = data['address'] ?? {};
+          final road = address['road'] ?? address['pedestrian'] ?? '';
+          final city = address['city'] ?? address['town'] ?? widget.cityName;
+          _addressPreview = road.isNotEmpty ? "$road, $city" : city;
         });
       }
-    } catch (e) {
-      // ignore
-    } finally {
+    } catch (e) { /* ignore */ } 
+    finally {
       if (mounted) setState(() => _isFetching = false);
     }
   }
 
-  // ⚠️ RECHERCHE INTELLIGENTE ET RÉCUPÉRATION DES INFOS
   Future<void> _searchPlaceByText() async {
+    // ⚠️ SI LA RECHERCHE EST DÉSACTIVÉE, ON NE FAIT RIEN ICI
+    if (widget.disableSearch) return;
+
     if (_nameController.text.trim().isEmpty) return;
 
     setState(() => _isFetching = true);
@@ -114,34 +114,15 @@ class _AddPlaceDialogState extends State<AddPlaceDialog> {
 
       if (foundPlace != null) {
         setState(() {
-          // 1. Mises à jour de base
           _currentLat = foundPlace.latitude;
           _currentLng = foundPlace.longitude;
           _nameController.text = foundPlace.title; 
           _addressPreview = foundPlace.description;
-          
-          if (_categories.contains(foundPlace.category)) {
-            _selectedCategory = foundPlace.category;
-          }
-
-          // ⚠️ 2. RÉCUPÉRATION DES INFOS RICHES (Image, Note, ID)
           _fetchedImageUrl = foundPlace.imageUrl;
           _fetchedRating = foundPlace.rating;
           _fetchedNoteCount = foundPlace.noteCount;
-          _googlePlaceId = foundPlace.placeId; // On garde l'ID Google pour récupérer le tel/site web plus tard
+          _googlePlaceId = foundPlace.placeId;
         });
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Lieu trouvé ! Infos et Image récupérées.")),
-          );
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Aucun lieu trouvé avec ce nom.")),
-          );
-        }
       }
     } catch (e) {
       print(e);
@@ -152,160 +133,222 @@ class _AddPlaceDialogState extends State<AddPlaceDialog> {
 
   Future<void> _savePlace() async {
     if (_formKey.currentState!.validate()) {
-      // Si on a trouvé un ID Google via la recherche, on l'utilise !
-      // Sinon, on génère un ID manuel.
-      String idToSave;
-      if (_googlePlaceId.isNotEmpty) {
-        idToSave = _googlePlaceId; // Utilise l'ID Google (permettra d'avoir tel/site web dans le détail)
-      } else {
-        idToSave = widget.placeToEdit != null 
-            ? widget.placeToEdit!.placeId 
-            : 'manual_${DateTime.now().millisecondsSinceEpoch}';
-      }
-
-      final double userRating = widget.placeToEdit?.userRating ?? 0.0;
-      final String? userComment = widget.placeToEdit?.userComment;
+      String idToSave = _googlePlaceId.isNotEmpty 
+          ? _googlePlaceId 
+          : (widget.placeToEdit?.placeId ?? 'manual_${DateTime.now().millisecondsSinceEpoch}');
 
       final placeToSave = Place(
         placeId: idToSave,
         cityName: widget.cityName,
         title: _nameController.text,
         description: _addressPreview,
-        category: _selectedCategory,
+        category: _selectedCategory.toLowerCase(),
         latitude: _currentLat,
         longitude: _currentLng,
-        // ⚠️ ON SAUVEGARDE L'IMAGE ET LA NOTE RÉCUPÉRÉES
         imageUrl: _fetchedImageUrl, 
         rating: _fetchedRating,
         noteCount: _fetchedNoteCount,
-        userRating: userRating,
-        userComment: userComment,
+        userRating: widget.placeToEdit?.userRating,
+        userComment: widget.placeToEdit?.userComment,
       );
 
       await DatabaseService.instance.insertPlace(placeToSave);
-
-      if (mounted) {
-        Navigator.of(context).pop(true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(widget.placeToEdit != null ? "Lieu modifié" : "Lieu ajouté avec succès")),
-        );
-      }
+      if (mounted) Navigator.of(context).pop(true);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isEditing = widget.placeToEdit != null;
-
-    return AlertDialog(
-      title: Text(isEditing ? 'Modifier le lieu' : 'Ajouter un lieu'),
-      content: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // ⚠️ APERÇU DE L'IMAGE SI TROUVÉE
-              if (_fetchedImageUrl.isNotEmpty)
-                Container(
-                  margin: const EdgeInsets.only(bottom: 15),
-                  height: 120,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    image: DecorationImage(
-                      image: NetworkImage(_fetchedImageUrl),
-                      fit: BoxFit.cover,
-                    ),
-                    boxShadow: [const BoxShadow(color: Colors.black26, blurRadius: 5)],
-                  ),
-                  child: Stack(
-                    children: [
-                      // Badge Note Google
-                      if (_fetchedRating > 0)
-                        Positioned(
-                          top: 8, right: 8,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(color: Colors.amber, borderRadius: BorderRadius.circular(12)),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.star, size: 12, color: Colors.black),
-                                const SizedBox(width: 4),
-                                Text(_fetchedRating.toString(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                              ],
-                            ),
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.all(20),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(25),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E1E1E).withOpacity(0.95),
+              borderRadius: BorderRadius.circular(25),
+              border: Border.all(color: Colors.white.withOpacity(0.1)),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 20, offset: const Offset(0, 10))
+              ]
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildHeaderImage(),
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // LE CHAMP CHANGE SELON LE MODE
+                          _buildNameField(),
+                          
+                          const SizedBox(height: 15),
+                          Row(
+                            children: [
+                              const Icon(Icons.location_on, color: Colors.amber, size: 16),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _addressPreview,
+                                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                                  maxLines: 1, overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                    ],
-                  ),
-                ),
-
-              // Champ Nom + Recherche
-              TextFormField(
-                controller: _nameController,
-                decoration: InputDecoration(
-                  labelText: 'Nom du lieu (ex: Le Louvre)',
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.place),
-                  suffixIcon: IconButton(
-                    icon: _isFetching 
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Icon(Icons.search, color: Colors.blue),
-                    onPressed: _searchPlaceByText,
-                    tooltip: "Rechercher les infos sur Google",
-                  ),
-                ),
-                validator: (v) => v == null || v.isEmpty ? 'Requis' : null,
-                onFieldSubmitted: (_) => _searchPlaceByText(),
-              ),
-              
-              const SizedBox(height: 10),
-              
-              // Adresse
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(8)
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.map, size: 16, color: Colors.grey),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _addressPreview,
-                        style: const TextStyle(fontSize: 12, color: Colors.black87),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                          const SizedBox(height: 20),
+                          const Text("CATÉGORIE", style: TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: _categories.entries.map((entry) {
+                              final isSelected = _selectedCategory.toLowerCase() == entry.key.toLowerCase();
+                              return ChoiceChip(
+                                label: Text(entry.key),
+                                avatar: isSelected ? null : Icon(entry.value, size: 16, color: Colors.white70),
+                                selected: isSelected,
+                                onSelected: (selected) {
+                                  if (selected) setState(() => _selectedCategory = entry.key);
+                                },
+                                backgroundColor: Colors.white.withOpacity(0.1),
+                                selectedColor: Colors.amber,
+                                labelStyle: TextStyle(color: isSelected ? Colors.black : Colors.white, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide.none),
+                              );
+                            }).toList(),
+                          ),
+                          const SizedBox(height: 30),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text("Annuler", style: TextStyle(color: Colors.white54)),
+                                ),
+                              ),
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: _savePlace,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.white,
+                                    foregroundColor: Colors.black,
+                                    padding: const EdgeInsets.symmetric(vertical: 15),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                                  ),
+                                  child: Text(widget.placeToEdit != null ? "MODIFIER" : "ENREGISTRER", style: const TextStyle(fontWeight: FontWeight.bold)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-
-              const SizedBox(height: 15),
-              
-              DropdownButtonFormField<String>(
-                initialValue: _selectedCategory,
-                decoration: const InputDecoration(
-                  labelText: 'Catégorie',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.category),
-                ),
-                items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-                onChanged: (val) => setState(() => _selectedCategory = val!),
-              ),
-            ],
+            ),
           ),
         ),
       ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annuler')),
-        ElevatedButton(onPressed: _savePlace, child: Text(isEditing ? 'Sauvegarder' : 'Ajouter')),
-      ],
+    );
+  }
+
+  Widget _buildHeaderImage() {
+    return SizedBox(
+      height: 160,
+      width: double.infinity,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (_fetchedImageUrl.isNotEmpty)
+            Image.network(_fetchedImageUrl, fit: BoxFit.cover)
+          else
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF8E2DE2), Color(0xFF4A00E0)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: Center(
+                child: Icon(_categories[_selectedCategory] ?? Icons.place, size: 50, color: Colors.white30),
+              ),
+            ),
+          Positioned(
+            bottom: 0, left: 0, right: 0,
+            child: Container(
+              height: 60,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.transparent, const Color(0xFF1E1E1E).withOpacity(0.95)],
+                ),
+              ),
+            ),
+          ),
+          if (_fetchedRating > 0)
+            Positioned(
+              top: 15, right: 15,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(color: Colors.amber, borderRadius: BorderRadius.circular(20), boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)]),
+                child: Row(
+                  children: [
+                    Text(_fetchedRating.toString(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.star, size: 12, color: Colors.black),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ⚠️ CHAMP DE TEXTE INTELLIGENT
+  Widget _buildNameField() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: TextFormField(
+        controller: _nameController,
+        style: const TextStyle(color: Colors.white),
+        decoration: InputDecoration(
+          // Si recherche désactivée (Clic Long) -> "Nom du repère"
+          // Si recherche activée (FAB) -> "Rechercher un lieu..."
+          hintText: widget.disableSearch ? "Nom du repère (ex: Mon coin secret)" : "Rechercher un lieu (ex: Tour Eiffel)",
+          hintStyle: TextStyle(color: Colors.grey.shade600),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+          // L'icône de recherche n'apparait que si la recherche est active
+          suffixIcon: widget.disableSearch 
+              ? const Icon(Icons.edit, color: Colors.white54) // Icône crayon pour mode manuel
+              : IconButton(
+                  icon: _isFetching 
+                      ? const SizedBox(height: 15, width: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.amber))
+                      : const Icon(Icons.search, color: Colors.amber),
+                  onPressed: _searchPlaceByText,
+                ),
+        ),
+        // On ne lance la recherche que si le mode le permet
+        onFieldSubmitted: widget.disableSearch ? null : (_) => _searchPlaceByText(),
+        validator: (v) => v == null || v.isEmpty ? 'Le nom est requis' : null,
+      ),
     );
   }
 }

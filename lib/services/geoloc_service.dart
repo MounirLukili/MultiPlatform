@@ -110,7 +110,7 @@ class GeolocService {
       print("❌ [DEBUG] ÉCHEC DE LA LOCALISATION");
       print("   -> Erreur exacte : $e");
       print("----------------------------------------------------------------");
-      throw e;
+      rethrow;
     }
   }
 

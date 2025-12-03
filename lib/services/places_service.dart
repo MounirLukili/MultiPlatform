@@ -12,14 +12,20 @@ class PlacesService {
   static const String _photoUrl = 'https://maps.googleapis.com/maps/api/place/photo';
   static const String _detailsUrl = 'https://maps.googleapis.com/maps/api/place/details/json';
 
-  static const Map<String, String> categoryMap = {
-    'manger': 'restaurant',
-    'nature': 'park',
-    'culture': 'museum',
-    'cafés': 'cafe',
-    'favoris': 'favorite', 
-  };
+// Dans lib/services/places_service.dart
 
+    static const Map<String, String> categoryMap = {
+      'favoris': 'favorite', // Spécial
+      'manger': 'restaurant',
+      'cafés': 'cafe',
+      'nature': 'park',
+      'culture': 'museum',
+      'shopping': 'shopping_mall', // 🆕
+      'hôtels': 'lodging',         // 🆕
+      'santé': 'pharmacy',         // 🆕
+      'banque': 'bank',            // 🆕
+      'essence': 'gas_station',    // 🆕
+    };
   // 1. Fonction pour construire l'URL de l'image
   String _buildPhotoUrl(String photoReference) {
     // maxwidth=400 permet d'avoir une image de bonne qualité sans être trop lourde
