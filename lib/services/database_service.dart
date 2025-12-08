@@ -1,6 +1,9 @@
-import 'package:sqflite/sqflite.dart';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
-import 'package:flutter/foundation.dart'; 
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:sqflite_common/sqlite_api.dart';
+
 import '../models/place_model.dart';
 import '../models/city_model.dart';
 
@@ -17,28 +20,32 @@ class DatabaseService {
   }
 
   Future<Database> _initDB(String filePath) async {
-    String path;
+    // -----------------------------------------------
+    // PLATFORM HANDLING → VERY IMPORTANT
+    // -----------------------------------------------
+    if (!kIsWeb && (Platform.isLinux || Platform.isWindows || Platform.isMacOS)) {
+      sqfliteFfiInit(); // Initialise SQLite
+      databaseFactory = databaseFactoryFfi;
+    }
 
-   
+    String path;
     if (kIsWeb) {
-      // Sur le Web, on donne juste le nom du fichier.
-      // Cela permet à sqflite_common_ffi_web de le stocker dans IndexedDB 
-      path = filePath;
+      path = filePath; // Stocké dans IndexedDB
     } else {
-      // Sur Mobile/Desktop, on utilise le chemin système correct.
-      final dbPath = await getDatabasesPath();
+      final dbPath = await databaseFactory.getDatabasesPath();
       path = join(dbPath, filePath);
     }
 
-    return await openDatabase(
-      path, 
-      version: 1, 
-      onCreate: _createDB,
+    return await databaseFactory.openDatabase(
+      path,
+      options: OpenDatabaseOptions(
+        version: 1,
+        onCreate: _createDB,
+      ),
     );
   }
 
   Future<void> _createDB(Database db, int version) async {
-    // Table des Lieux (POI)
     await db.execute('''
       CREATE TABLE places (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -57,7 +64,6 @@ class DatabaseService {
       )
     ''');
 
-    //Table des Villes favorites
     await db.execute('''
       CREATE TABLE cities (
         id TEXT PRIMARY KEY,
@@ -69,11 +75,17 @@ class DatabaseService {
     ''');
   }
 
-  // --- GESTION DES POI ---
+  // ------------------------
+  // PLACES
+  // ------------------------
 
   Future<int> insertPlace(Place place) async {
     final db = await instance.database;
-    return await db.insert('places', place.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+    return await db.insert(
+      'places',
+      place.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   Future<int> deletePlace(String placeId) async {
@@ -86,18 +98,35 @@ class DatabaseService {
     final maps = await db.query('places', where: 'placeId = ?', whereArgs: [placeId]);
     return maps.isNotEmpty;
   }
-  
+
   Future<List<Place>> getAllPlaces() async {
-     final db = await instance.database;
-     final result = await db.query('places');
-     return result.map((json) => Place.fromMap(json)).toList();
+    final db = await instance.database;
+    final result = await db.query('places');
+    return result.map((json) => Place.fromMap(json)).toList();
   }
 
-  // --- GESTION DES VILLES  ---
+  Future<List<Place>> getPlacesForCity(String cityName) async {
+    final db = await instance.database;
+    final result = await db.query(
+      'places',
+      where: 'cityName = ?',
+      whereArgs: [cityName],
+      orderBy: 'id DESC',
+    );
+    return result.map((json) => Place.fromMap(json)).toList();
+  }
+
+  // ------------------------
+  // CITIES
+  // ------------------------
 
   Future<int> insertCity(City city) async {
     final db = await instance.database;
-    return await db.insert('cities', city.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+    return await db.insert(
+      'cities',
+      city.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   Future<int> deleteCity(String id) async {
@@ -107,8 +136,8 @@ class DatabaseService {
 
   Future<bool> isCityFavorite(String id) async {
     final db = await instance.database;
-    final maps = await db.query('cities', where: 'id = ?', whereArgs: [id]);
-    return maps.isNotEmpty;
+    final result = await db.query('cities', where: 'id = ?', whereArgs: [id]);
+    return result.isNotEmpty;
   }
 
   Future<List<City>> getFavoriteCities() async {
@@ -116,17 +145,4 @@ class DatabaseService {
     final result = await db.query('cities');
     return result.map((json) => City.fromMap(json)).toList();
   }
-
-  Future<List<Place>> getPlacesForCity(String cityName) async {
-    final db = await instance.database;
-    // On filtre par le nom de la ville
-    final result = await db.query(
-      'places', 
-      where: 'cityName = ?', 
-      whereArgs: [cityName],
-      orderBy: 'id DESC' // Les plus récents en premier
-    );
-    return result.map((json) => Place.fromMap(json)).toList();
-  }
-
 }

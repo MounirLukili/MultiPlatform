@@ -28,18 +28,21 @@ class PreferencesService {
   }
 
   Future<City?> getDefaultCity() async {
-    final prefs = await SharedPreferences.getInstance();
-    String? cityJson = prefs.getString(_keyDefaultCity);
-    
-    if (cityJson == null) return null;
+  final prefs = await SharedPreferences.getInstance();
+  String? cityJson = prefs.getString(_keyDefaultCity);
 
-    try {
-      Map<String, dynamic> map = json.decode(cityJson);
-      return City.fromMap(map);
-    } catch (e) {
-      return null;
-    }
+  if (cityJson == null) {
+    return null; // Aucun JSON stocké
   }
+
+  try {
+    Map<String, dynamic> map = json.decode(cityJson);
+    return City.fromMap(map);
+  } catch (e) {
+    return null;
+  }
+}
+
 
   Future<void> clearDefaultCity() async {
     final prefs = await SharedPreferences.getInstance();

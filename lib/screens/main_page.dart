@@ -11,6 +11,7 @@ import '../providers/city_provider.dart';
 import '../providers/poi_provider.dart';
 import '../providers/theme_provider.dart';
 import '../services/database_service.dart';
+import '../services/preferences_service.dart'; 
 import '../models/city_model.dart';
 import '../models/place_model.dart';
 import 'place_detail_screen.dart';
@@ -18,12 +19,10 @@ import 'add_place_dialog.dart';
 import 'city_drawer.dart';
 import 'poi_carousel.dart';
 import '../screens/ai_assistant_screen.dart';
-
-// TOUS NOS WIDGETS PERSONNALISÉS
 import '../widgets/weather_card.dart';
 import '../widgets/category_selector.dart';
-import '../widgets/animated_place_card.dart'; // Nouveau
-import '../widgets/floating_menu.dart';       // Nouveau
+import '../widgets/animated_place_card.dart';
+import '../widgets/floating_menu.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -112,20 +111,58 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
     _refreshFavorites();
   }
 
+  // --- MODIFICATION ICI : BOÎTE DE DIALOGUE PARAMÈTRES ---
   void _showSettingsDialog() {
     showDialog(
       context: context,
       builder: (ctx) {
         final themeProvider = Provider.of<ThemeProvider>(context);
         final isDark = themeProvider.themeMode == ThemeMode.dark;
+        
         return AlertDialog(
           title: const Text("Paramètres"),
-          content: SwitchListTile(
-            title: const Text("Mode Sombre"),
-            value: isDark,
-            onChanged: (val) => themeProvider.toggleTheme(val),
+          // On utilise Column avec mainAxisSize.min pour empiler les options
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Option 1 : Thème
+              SwitchListTile(
+                title: const Text("Mode Sombre"),
+                secondary: Icon(isDark ? Icons.dark_mode : Icons.light_mode),
+                value: isDark,
+                onChanged: (val) => themeProvider.toggleTheme(val),
+              ),
+              
+              const Divider(),
+              
+              // Option 2 : Supprimer la ville par défaut
+              ListTile(
+                leading: const Icon(Icons.location_off, color: Colors.redAccent),
+                title: const Text("Oublier la ville par défaut"),
+                subtitle: const Text("Au prochain lancement, l'app redemandera votre position."),
+                onTap: () async {
+                  // Appel au service pour supprimer la préférence
+                  await PreferencesService().clearDefaultCity();
+                  
+                  if (mounted) {
+                    Navigator.pop(ctx); // Fermer le dialogue
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Ville par défaut supprimée."),
+                        backgroundColor: Colors.orange,
+                      ),
+                    );
+                  }
+                },
+              ),
+            ],
           ),
-          actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Fermer"))],
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx), 
+              child: const Text("Fermer")
+            )
+          ],
         );
       },
     );
@@ -240,7 +277,6 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
                   itemCount: snapshot.data!.length,
                   itemBuilder: (context, index) {
                     final place = snapshot.data![index];
-                    // Utilisation du nouveau widget extrait
                     return AnimatedPlaceCard(
                         place: place,
                         onTap: () => _navigateToDetail(place)
@@ -280,7 +316,6 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
           drawer: const CityDrawer(),
           floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
           
-          // Utilisation du widget FloatingMenu extrait
           floatingActionButton: FloatingMenu(
             onAiPressed: _handleAiAssistant,
             onSettingsPressed: _showSettingsDialog,

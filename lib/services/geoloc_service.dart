@@ -1,87 +1,143 @@
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'dart:io'; 
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 
 class GeolocService {
 
+  // ------------------------------------------------------------
+  // 1. Permissions → Jamais utilisées sur Desktop
+  // ------------------------------------------------------------
   Future<LocationPermission> checkAndRequestPermission() async {
-    bool serviceEnabled;
-
-    try {
-      serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    } catch (_) {
-      serviceEnabled = true;
+    // DESKTOP → Aucun GPS, donc aucune permission à demander
+    if (!kIsWeb && (Platform.isLinux || Platform.isWindows || Platform.isMacOS)) {
+      return LocationPermission.whileInUse; // Valeur par défaut
     }
 
+    // --- MOBILE ---
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      return Future.error('Location services are disabled.');
+      return Future.error('Les services de localisation sont désactivés.');
     }
 
     LocationPermission permission = await Geolocator.checkPermission();
 
-    if (permission == LocationPermission.denied || permission == LocationPermission.unableToDetermine) {
-      try {
-        permission = await Geolocator.requestPermission();
-      } catch (_) {
-        return LocationPermission.whileInUse;
-      }
+    if (permission == LocationPermission.denied || 
+        permission == LocationPermission.unableToDetermine) {
+      permission = await Geolocator.requestPermission();
     }
 
     if (permission == LocationPermission.deniedForever) {
-      return Future.error('Location permissions are permanently denied.');
+      return Future.error('Les permissions de localisation sont refusées.');
     }
-    
+
     return permission;
   }
 
+  // ------------------------------------------------------------
+  // 2. Obtenir position → Desktop = IP, Mobile = GPS
+  // ------------------------------------------------------------
   Future<Position> getCurrentPosition() async {
-    try {
-      Position? lastPosition = await Geolocator.getLastKnownPosition();
-      if (lastPosition != null) {
-        return lastPosition;
-      }
-    } catch (_) {}
-
-    LocationAccuracy accuracy = LocationAccuracy.low;
-    
-    if (!kIsWeb && !Platform.isLinux) {
-      accuracy = LocationAccuracy.high;
+    // DESKTOP → On ne tente jamais Geolocator
+    if (!kIsWeb && (Platform.isLinux || Platform.isWindows || Platform.isMacOS)) {
+      return await _getPositionFromIP();
     }
 
+    // --- MOBILE (Android / iOS) ---
     try {
-      final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: accuracy,
-        timeLimit: const Duration(seconds: 15),
+      return await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 3),
       );
-      return position;
     } catch (e) {
-      rethrow;
+      print("⚠️ GPS échec : fallback IP. Erreur : $e");
+      return await _getPositionFromIP();
     }
   }
 
+  // ------------------------------------------------------------
+  // 3. Fallback par IP (Linux / Windows / macOS / mobile offline)
+  // ------------------------------------------------------------
+  Future<Position> _getPositionFromIP() async {
+    try {
+      final response = await http
+          .get(Uri.parse('http://ip-api.com/json'))
+          .timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        return Position(
+          latitude: data['lat'] ?? 48.8566,
+          longitude: data['lon'] ?? 2.3522,
+          timestamp: DateTime.now(),
+          accuracy: 5000,
+          altitude: 0,
+          heading: 0,
+          speed: 0,
+          speedAccuracy: 0,
+          altitudeAccuracy: 0,
+          headingAccuracy: 0,
+        );
+      }
+    } catch (e) {
+      print("⚠️ Erreur récuperation IP : $e");
+    }
+
+    // En dernier recours → Paris par défaut
+    return Position(
+      latitude: 48.8566,
+      longitude: 2.3522,
+      timestamp: DateTime.now(),
+      accuracy: 5000,
+      altitude: 0,
+      heading: 0,
+      speed: 0,
+      speedAccuracy: 0,
+      altitudeAccuracy: 0,
+      headingAccuracy: 0,
+    );
+  }
+
+  // ------------------------------------------------------------
+  // 4. Reverse Geocoding (adresse → ville/pays)
+  // ------------------------------------------------------------
   Future<Map<String, dynamic>> reverseGeocode(double lat, double lon) async {
     final url =
-      'https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lon&zoom=10&addressdetails=1';
-    
+        'https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lon&zoom=10&addressdetails=1';
+
     try {
       final response = await http.get(
         Uri.parse(url),
         headers: {'User-Agent': 'ExplorezVotreVilleFlutterApp/1.0'},
       ).timeout(const Duration(seconds: 8));
-      
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        final address = data['address'];
-        final city = address['city'] ?? address['town'] ?? address['village'] ?? 'Inconnue';
-        final country = address['country'] ?? 'N/A';
-        return {'city': city, 'country': country, 'latitude': lat, 'longitude': lon};
-      } else {
-        return Future.error('Failed to reverse geocode.');
+        final address = data['address'] ?? {};
+        final city = address['city'] ??
+            address['town'] ??
+            address['village'] ??
+            'Position Inconnue';
+        final country = address['country'] ?? '';
+
+        return {
+          'city': city,
+          'country': country,
+          'latitude': lat,
+          'longitude': lon
+        };
       }
-    } catch (_) {
-      return Future.error('Network error during reverse geocoding.');
+    } catch (e) {
+      print("⚠️ Reverse geocode erreur : $e");
     }
+
+    return {
+      'city': 'Ma Position',
+      'country': '',
+      'latitude': lat,
+      'longitude': lon
+    };
   }
 }
