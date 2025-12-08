@@ -8,18 +8,22 @@ import '../services/database_service.dart';
 import '../services/geoloc_service.dart';
 import '../services/places_service.dart';
 
+// IMPORTS DES NOUVEAUX WIDGETS
+import '../widgets/dialog_header_image.dart';
+import '../widgets/category_chips_selector.dart';
+
 class AddPlaceDialog extends StatefulWidget {
   final LatLng location;
   final String cityName;
   final Place? placeToEdit;
-  final bool disableSearch; // ⚠️ NOUVEAU PARAMÈTRE
+  final bool disableSearch;
 
   const AddPlaceDialog({
     super.key, 
     required this.location, 
     required this.cityName,
     this.placeToEdit,
-    this.disableSearch = false, // Par défaut, la recherche est active
+    this.disableSearch = false,
   });
 
   @override
@@ -71,7 +75,6 @@ class _AddPlaceDialogState extends State<AddPlaceDialog> {
     } else {
       _nameController = TextEditingController();
       _selectedCategory = 'Autre';
-      // Si on vient d'un clic long, on cherche l'adresse tout de suite
       _fetchAddressFromCoordinates();
     }
   }
@@ -83,7 +86,6 @@ class _AddPlaceDialogState extends State<AddPlaceDialog> {
       final data = await _geolocService.reverseGeocode(_currentLat, _currentLng);
       if (mounted) {
         setState(() {
-          // On affiche une adresse propre
           final address = data['address'] ?? {};
           final road = address['road'] ?? address['pedestrian'] ?? '';
           final city = address['city'] ?? address['town'] ?? widget.cityName;
@@ -97,9 +99,7 @@ class _AddPlaceDialogState extends State<AddPlaceDialog> {
   }
 
   Future<void> _searchPlaceByText() async {
-    // ⚠️ SI LA RECHERCHE EST DÉSACTIVÉE, ON NE FAIT RIEN ICI
     if (widget.disableSearch) return;
-
     if (_nameController.text.trim().isEmpty) return;
 
     setState(() => _isFetching = true);
@@ -179,7 +179,14 @@ class _AddPlaceDialogState extends State<AddPlaceDialog> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _buildHeaderImage(),
+                  // UTILISATION DU WIDGET EXTRAIT
+                  DialogHeaderImage(
+                    imageUrl: _fetchedImageUrl,
+                    category: _selectedCategory,
+                    rating: _fetchedRating,
+                    categoryIcon: _categories[_selectedCategory] ?? Icons.place,
+                  ),
+                  
                   Padding(
                     padding: const EdgeInsets.all(20),
                     child: Form(
@@ -187,7 +194,6 @@ class _AddPlaceDialogState extends State<AddPlaceDialog> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // LE CHAMP CHANGE SELON LE MODE
                           _buildNameField(),
                           
                           const SizedBox(height: 15),
@@ -207,25 +213,14 @@ class _AddPlaceDialogState extends State<AddPlaceDialog> {
                           const SizedBox(height: 20),
                           const Text("CATÉGORIE", style: TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
                           const SizedBox(height: 10),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: _categories.entries.map((entry) {
-                              final isSelected = _selectedCategory.toLowerCase() == entry.key.toLowerCase();
-                              return ChoiceChip(
-                                label: Text(entry.key),
-                                avatar: isSelected ? null : Icon(entry.value, size: 16, color: Colors.white70),
-                                selected: isSelected,
-                                onSelected: (selected) {
-                                  if (selected) setState(() => _selectedCategory = entry.key);
-                                },
-                                backgroundColor: Colors.white.withOpacity(0.1),
-                                selectedColor: Colors.amber,
-                                labelStyle: TextStyle(color: isSelected ? Colors.black : Colors.white, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide.none),
-                              );
-                            }).toList(),
+                          
+                          // UTILISATION DU WIDGET EXTRAIT
+                          CategoryChipsSelector(
+                            categories: _categories,
+                            selectedCategory: _selectedCategory,
+                            onCategorySelected: (cat) => setState(() => _selectedCategory = cat),
                           ),
+
                           const SizedBox(height: 30),
                           Row(
                             children: [
@@ -262,62 +257,6 @@ class _AddPlaceDialogState extends State<AddPlaceDialog> {
     );
   }
 
-  Widget _buildHeaderImage() {
-    return SizedBox(
-      height: 160,
-      width: double.infinity,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          if (_fetchedImageUrl.isNotEmpty)
-            Image.network(_fetchedImageUrl, fit: BoxFit.cover)
-          else
-            Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF8E2DE2), Color(0xFF4A00E0)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: Center(
-                child: Icon(_categories[_selectedCategory] ?? Icons.place, size: 50, color: Colors.white30),
-              ),
-            ),
-          Positioned(
-            bottom: 0, left: 0, right: 0,
-            child: Container(
-              height: 60,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, const Color(0xFF1E1E1E).withOpacity(0.95)],
-                ),
-              ),
-            ),
-          ),
-          if (_fetchedRating > 0)
-            Positioned(
-              top: 15, right: 15,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(color: Colors.amber, borderRadius: BorderRadius.circular(20), boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)]),
-                child: Row(
-                  children: [
-                    Text(_fetchedRating.toString(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                    const SizedBox(width: 4),
-                    const Icon(Icons.star, size: 12, color: Colors.black),
-                  ],
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  // ⚠️ CHAMP DE TEXTE INTELLIGENT
   Widget _buildNameField() {
     return Container(
       decoration: BoxDecoration(
@@ -329,15 +268,12 @@ class _AddPlaceDialogState extends State<AddPlaceDialog> {
         controller: _nameController,
         style: const TextStyle(color: Colors.white),
         decoration: InputDecoration(
-          // Si recherche désactivée (Clic Long) -> "Nom du repère"
-          // Si recherche activée (FAB) -> "Rechercher un lieu..."
           hintText: widget.disableSearch ? "Nom du repère (ex: Mon coin secret)" : "Rechercher un lieu (ex: Tour Eiffel)",
           hintStyle: TextStyle(color: Colors.grey.shade600),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
-          // L'icône de recherche n'apparait que si la recherche est active
           suffixIcon: widget.disableSearch 
-              ? const Icon(Icons.edit, color: Colors.white54) // Icône crayon pour mode manuel
+              ? const Icon(Icons.edit, color: Colors.white54)
               : IconButton(
                   icon: _isFetching 
                       ? const SizedBox(height: 15, width: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.amber))
@@ -345,7 +281,6 @@ class _AddPlaceDialogState extends State<AddPlaceDialog> {
                   onPressed: _searchPlaceByText,
                 ),
         ),
-        // On ne lance la recherche que si le mode le permet
         onFieldSubmitted: widget.disableSearch ? null : (_) => _searchPlaceByText(),
         validator: (v) => v == null || v.isEmpty ? 'Le nom est requis' : null,
       ),

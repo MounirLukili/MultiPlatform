@@ -1,5 +1,3 @@
-// lib/screens/city_drawer.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/database_service.dart';
@@ -14,7 +12,7 @@ class CityDrawer extends StatefulWidget {
 }
 
 class _CityDrawerState extends State<CityDrawer> {
-  // Clé pour rafraichir la liste après une suppression
+  // rafraichir la liste apres une suppression
   int _refreshKey = 0;
 
   @override
@@ -68,7 +66,7 @@ class _CityDrawerState extends State<CityDrawer> {
                         onPressed: () async {
                           // Suppression de la ville
                           await DatabaseService.instance.deleteCity(city.id);
-                          setState(() => _refreshKey++); // Rafraichir la liste
+                          setState(() => _refreshKey++); // Reload la liste
                         },
                       ),
                       onTap: () {

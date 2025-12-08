@@ -1,12 +1,10 @@
-// lib/services/openai_service.dart
-
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class OpenAIService {
-  static const String _apiKey = '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'; // Remettez votre clé
-  
-  // ⚠️ MODIFICATION : On prend une liste de messages (l'historique)
+static final String _apiKey = dotenv.env['OPENAI_KEY'] ?? '';  
+  // On prend une liste de messages (l'historique)
 Future<Map<String, String>> getChatResponse(String userMessage) async {
     const String url = 'https://api.openai.com/v1/chat/completions';
 

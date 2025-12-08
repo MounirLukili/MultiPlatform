@@ -1,8 +1,6 @@
-// lib/services/database_service.dart
-
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'package:flutter/foundation.dart'; // ⚠️ NOUVEAU : Pour kIsWeb
+import 'package:flutter/foundation.dart'; 
 import '../models/place_model.dart';
 import '../models/city_model.dart';
 
@@ -21,10 +19,10 @@ class DatabaseService {
   Future<Database> _initDB(String filePath) async {
     String path;
 
-    // ⚠️ CORRECTION PERSISTANCE WEB
+   
     if (kIsWeb) {
       // Sur le Web, on donne juste le nom du fichier.
-      // Cela permet à sqflite_common_ffi_web de le stocker dans IndexedDB (persistant).
+      // Cela permet à sqflite_common_ffi_web de le stocker dans IndexedDB 
       path = filePath;
     } else {
       // Sur Mobile/Desktop, on utilise le chemin système correct.
@@ -40,7 +38,7 @@ class DatabaseService {
   }
 
   Future<void> _createDB(Database db, int version) async {
-    // 1. Table des Lieux (POI)
+    // Table des Lieux (POI)
     await db.execute('''
       CREATE TABLE places (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -59,7 +57,7 @@ class DatabaseService {
       )
     ''');
 
-    // 2. Table des Villes favorites
+    //Table des Villes favorites
     await db.execute('''
       CREATE TABLE cities (
         id TEXT PRIMARY KEY,
@@ -71,7 +69,7 @@ class DatabaseService {
     ''');
   }
 
-  // --- GESTION DES POI (PLACES) ---
+  // --- GESTION DES POI ---
 
   Future<int> insertPlace(Place place) async {
     final db = await instance.database;
@@ -95,7 +93,7 @@ class DatabaseService {
      return result.map((json) => Place.fromMap(json)).toList();
   }
 
-  // --- GESTION DES VILLES (CITIES) ---
+  // --- GESTION DES VILLES  ---
 
   Future<int> insertCity(City city) async {
     final db = await instance.database;

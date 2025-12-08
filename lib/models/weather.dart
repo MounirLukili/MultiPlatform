@@ -1,5 +1,5 @@
 class Weather {
-  final String city;        // 👈 ajouté
+  final String city;       
   final double temp;
   final String description;
   final double tempMin;
@@ -8,7 +8,7 @@ class Weather {
   final double windSpeed;
 
   Weather({
-    required this.city,     // 👈 ajouté
+    required this.city,     
     required this.temp,
     required this.description,
     required this.tempMin,
@@ -19,7 +19,7 @@ class Weather {
 
   factory Weather.fromJson(Map<String, dynamic> json) {
     return Weather(
-      city: json['name'],   // 👈 récupère le nom retourné par OpenWeather
+      city: json['name'],   
       temp: json['main']['temp'].toDouble(),
       description: json['weather'][0]['description'],
       tempMin: json['main']['temp_min'].toDouble(),

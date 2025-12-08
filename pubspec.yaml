@@ -15,7 +15,7 @@ dependencies:
 
   google_maps_flutter: ^2.6.0
   google_geocoding_api: ^1.0.1
-  flutter_dotenv: ^5.1.0
+  flutter_dotenv: ^6.0.0
 
 
   # UI / Animations
@@ -62,3 +62,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/
+    - .env

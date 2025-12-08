@@ -1,5 +1,3 @@
-// lib/screens/note_comment_dialog.dart
-
 import 'package:flutter/material.dart';
 import '../models/place_model.dart';
 import '../services/database_service.dart';
@@ -15,12 +13,12 @@ class NoteCommentDialog extends StatefulWidget {
 
 class _NoteCommentDialogState extends State<NoteCommentDialog> {
   final _commentController = TextEditingController();
-  double _rating = 3.0; // Valeur par défaut
+  double _rating = 0.0; // Valeur par défaut
 
   @override
   void initState() {
     super.initState();
-    // Pré-remplir si des données existent déjà
+    // remplir si des donnees existent deja
     if (widget.place.userRating != null && widget.place.userRating! > 0) {
       _rating = widget.place.userRating!;
     }
@@ -30,17 +28,17 @@ class _NoteCommentDialogState extends State<NoteCommentDialog> {
   }
 
   Future<void> _saveNote() async {
-    // 1. Créer une copie du lieu avec les nouvelles infos utilisateur
+    // Creer une copie du lieu avec les nouvelles infos utilisateur
     final updatedPlace = widget.place.copyWith(
       userRating: _rating,
       userComment: _commentController.text,
     );
 
-    // 2. Sauvegarder dans SQLite (insertPlace gère le remplacement grâce à ConflictAlgorithm.replace)
+    //  Sauvegarder dans SQLite (insertPlace gère le remplacement grâce à ConflictAlgorithm.replace)
     await DatabaseService.instance.insertPlace(updatedPlace);
 
     if (mounted) {
-      // 3. Fermer le dialogue et renvoyer le lieu mis à jour à la page précédente
+      // Fermer le dialogue et renvoyer le lieu mis à jour à la page précédente
       Navigator.of(context).pop(updatedPlace);
       
       ScaffoldMessenger.of(context).showSnackBar(
@@ -66,7 +64,7 @@ class _NoteCommentDialogState extends State<NoteCommentDialog> {
                     value: _rating,
                     min: 0,
                     max: 5,
-                    divisions: 10, // Permet des demi-étoiles (0.5)
+                    divisions: 10, // Permet des demi-étoiles 
                     label: _rating.toString(),
                     onChanged: (val) => setState(() => _rating = val),
                   ),

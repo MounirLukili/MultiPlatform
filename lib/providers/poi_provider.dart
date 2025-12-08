@@ -1,5 +1,3 @@
-// lib/providers/poi_provider.dart
-
 import 'package:flutter/material.dart';
 import '../models/place_model.dart';
 import '../services/places_service.dart';
@@ -24,7 +22,6 @@ class PoiProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ⚠️ MODIFICATION : On ajoute le paramètre optionnel [cityName]
   Future<void> searchPois(double lat, double lon, String categoryKey, {bool forceRefresh = false, String? cityName}) async {
     
     if (!forceRefresh && _activeCategory == categoryKey && _currentPois.isNotEmpty) {
@@ -40,14 +37,13 @@ class PoiProvider with ChangeNotifier {
     try {
       List<Place> fetchedPois = [];
 
-      // ⚠️ LOGIQUE DE FILTRE
       if (categoryKey.toLowerCase() == 'favoris') {
         print("🔍 Recherche des favoris...");
         if (cityName != null) {
           // Si on a un nom de ville, on ne charge que ceux-là !
           fetchedPois = await DatabaseService.instance.getPlacesForCity(cityName);
         } else {
-          // Sinon on charge tout (sécurité)
+          // Sinon on charge tout 
           fetchedPois = await DatabaseService.instance.getAllPlaces();
         }
         

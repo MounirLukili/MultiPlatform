@@ -1,5 +1,3 @@
-// lib/services/preferences_service.dart
-
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert'; // Pour encoder la ville en JSON
 import '../models/city_model.dart';

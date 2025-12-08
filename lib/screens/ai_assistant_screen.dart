@@ -1,5 +1,3 @@
-// lib/screens/ai_assistant_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:ui'; // Pour l'effet de flou
@@ -99,7 +97,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     }
   }
 
-  // --- UI WIDGETS ---
+ 
 
   Widget _buildMessageBubble(String text, bool isUser, String? keyword) {
     // ⚠️ LARGEUR DYNAMIQUE : 80% de l'écran au lieu de 300px fixe
@@ -110,7 +108,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
         padding: const EdgeInsets.all(16),
-        constraints: BoxConstraints(maxWidth: maxBubbleWidth), // ⚠️ ICI LA CORRECTION
+        constraints: BoxConstraints(maxWidth: maxBubbleWidth),
         decoration: BoxDecoration(
           color: isUser ? Colors.amber : const Color(0xFF2A2A3A),
           borderRadius: BorderRadius.only(
@@ -122,7 +120,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
           boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 6, offset: const Offset(0, 3))],
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min, // ⚠️ IMPORTANT : Prend juste la place nécessaire
+          mainAxisSize: MainAxisSize.min, // Prend juste la place nécessaire
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(

@@ -1,22 +1,19 @@
-// lib/models/city_model.dart
-
-import 'package:flutter/foundation.dart'; // <-- nécessaire pour UniqueKey
+import 'package:flutter/foundation.dart'; //  pour UniqueKey
 
 class City {
-  // Identifiant unique pour détecter les changements
+  // Id pour detect les changements
   final String id;
 
-  // Informations de base
   final String name;
   final String country;
-  // Coordonnées géographiques
+  // Coordonnées 
   final double latitude;
   final double longitude;
-  // Informations Météo (stockées pour cette ville)
+  // Informations Météo 
   final double currentTemp;
   final double minTemp;
   final double maxTemp;
-  final String weatherCondition; // ex: 'Ensoleillé', 'Pluvieux'
+  final String weatherCondition; // ex: 'Ensoleillé'
   final int humidity;
   final double windSpeed;
 
@@ -42,10 +39,10 @@ class City {
     required double latitude,
     required double longitude,
   }) {
-    // Génère un id unique à chaque création (utile pour forcer la détection de changement)
+    // Génère un id unique à chaque création (pr detecter le changement)
     final String generatedId = UniqueKey().toString();
 
-    // Initialisation par défaut de la météo en attendant l'appel API
+    // Init  de la météo en attendant l' API
     return City(
       id: generatedId,
       name: name,
@@ -61,8 +58,8 @@ class City {
     );
   }
 
-  // Méthode pour créer une nouvelle instance de City avec les données météo mises à jour
-  // Utile pour la fonction copyWith() standard.
+  // Méthode pour créer une nouvelle instance de laville avec les données meteo
+  
   City copyWithWeather({
     required double currentTemp,
     required double minTemp,
@@ -86,7 +83,7 @@ class City {
     );
   }
 
-  // Optionnel : méthode pour forcer explicitement la création d'une copie avec un nouvel id
+  // méthode pour forcer  la création d'une copie avec un nouvel id
   City copyWithNewId() {
     return City(
       id: UniqueKey().toString(),
@@ -128,7 +125,7 @@ class City {
       country: map['country'],
       latitude: map['latitude'],
       longitude: map['longitude'],
-      // Valeurs par défaut pour la météo (sera rechargée par l'API)
+      // Valeurs par defaut pour la meteo (API)
       currentTemp: 0.0,
       minTemp: 0.0,
       maxTemp: 0.0,

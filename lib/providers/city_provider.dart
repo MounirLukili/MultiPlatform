@@ -1,27 +1,20 @@
-// lib/providers/city_provider.dart
-
 import 'package:flutter/material.dart';
 import '../models/city_model.dart';
 import '../services/geoloc_service.dart';
 import '../services/weather_service.dart';
-import '../services/database_service.dart'; // ⚠️ NOUVEL IMPORT
-import '../services/city_search_service.dart'; // ⚠️ NOUVELLE IMPORTATION
+import '../services/database_service.dart'; 
+import '../services/city_search_service.dart'; 
 
 class CityProvider with ChangeNotifier {
   final GeolocService _geolocService = GeolocService();
   final WeatherService _weatherService = WeatherService();
-  final CitySearchService _searchService = CitySearchService(); // ⚠️ NOUVEAU SERVICE
+  final CitySearchService _searchService = CitySearchService();
 
-  City? _currentCity; // La ville actuellement affichée/explorée
+  City? _currentCity; 
   bool _isLoading = false;
   String? _errorMessage;
-  
-  // ⚠️ Nouvelles variables pour la recherche
   List<City> _searchResults = [];
   bool _isSearching = false;
-
-  
-
   City? get currentCity => _currentCity;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -29,7 +22,7 @@ class CityProvider with ChangeNotifier {
   bool get isSearching => _isSearching;
 
 
-  // 1. Démarre le processus de géolocalisation et de récupération des données de la ville (inchangé)
+  // Démarre le processus de géolocalisation et de récupération des données de la ville 
   Future<void> findCurrentCityAndWeather(BuildContext context) async {
     _isLoading = true;
     _errorMessage = null;
@@ -65,7 +58,7 @@ class CityProvider with ChangeNotifier {
   Future<void> setCity(City city) async {
     _isLoading = true;
     notifyListeners();
-    await _fetchWeatherAndSave(city); // ⚠️ APPEL MODIFIÉ
+    await _fetchWeatherAndSave(city); 
     _isLoading = false;
     notifyListeners();
   }
@@ -83,13 +76,12 @@ class CityProvider with ChangeNotifier {
         windSpeed: weatherData['windSpeed'],
       );
 
-      // SAUVEGARDE AUTOMATIQUE DANS SQLITE
+      // SAUVEGARDE AUTO DANS LA BDD
       await DatabaseService.instance.insertCity(_currentCity!);
       
     } catch (e) {
       _currentCity = city; 
       _errorMessage = 'Météo non disponible.';
-      // On sauvegarde quand même la ville même sans météo
       await DatabaseService.instance.insertCity(_currentCity!);
     }
   }
@@ -98,7 +90,7 @@ class CityProvider with ChangeNotifier {
 
   
 
-  // ⚠️ 4. Nouvelle méthode de recherche de ville (Fonctionnalité 1.3)
+  // ⚠️ 4. Nouvelle méthode de recherche de ville (
   Future<void> searchCity(String query) async {
     if (query.trim().isEmpty) {
       _searchResults = [];

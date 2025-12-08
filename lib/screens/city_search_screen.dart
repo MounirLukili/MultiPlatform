@@ -1,5 +1,3 @@
-// lib/screens/city_search_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
@@ -17,7 +15,7 @@ class _CitySearchScreenState extends State<CitySearchScreen> {
   final TextEditingController _controller = TextEditingController();
   Timer? _debounce;
   
-  // ⚠️ NOUVEAU : Un "verrou" pour empêcher la boucle infinie
+  // Un "verrou" pour empecher la boucle infinie
   bool _isRedirecting = false;
 
   void _onSearchChanged(String query) {
@@ -53,7 +51,6 @@ class _CitySearchScreenState extends State<CitySearchScreen> {
     return Consumer<CityProvider>(
       builder: (context, cityProvider, child) {
         
-        // ⚠️ LOGIQUE POINT 1.3 CORRIGÉE
         // On vérifie les conditions pour l'auto-sélection
         bool shouldAutoSelect = !cityProvider.isSearching && 
                                 cityProvider.searchResults.length == 1 && 

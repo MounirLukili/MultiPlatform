@@ -1,17 +1,13 @@
-// lib/services/weather_service.dart
-
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class WeatherService {
-  // ⚠️ Remplacer par votre clé API OpenWeatherMap
-  static const String _apiKey = '69943523b8432650e299f19a33b5d3cb';
+static final String _apiKey = dotenv.env['OPENWEATHER_KEY'] ?? '';
   static const String _baseUrl = 'https://api.openweathermap.org/data/2.5/weather';
 
   Future<Map<String, dynamic>> fetchWeather(double lat, double lon) async {
-    if (_apiKey == 'YOUR_OPENWEATHER_API_KEY') {
-       throw Exception("Veuillez remplacer 'YOUR_OPENWEATHER_API_KEY' par votre clé OpenWeatherMap.");
-    }
+  
     // Appel à l'API OpenWeatherMap en utilisant les unités métriques (Celsius) et en français
     final url = '$_baseUrl?lat=$lat&lon=$lon&units=metric&lang=fr&appid=$_apiKey';
     

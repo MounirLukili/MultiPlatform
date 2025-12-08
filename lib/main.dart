@@ -1,4 +1,3 @@
-// lib/main.dart
 
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -6,18 +5,19 @@ import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
-
 import 'screens/landing_screen.dart';
 import 'screens/main_page.dart'; 
 import 'screens/city_search_screen.dart';
 import 'providers/city_provider.dart'; 
 import 'providers/poi_provider.dart';
-import 'providers/theme_provider.dart'; // ⚠️ NOUVEAU
+import 'providers/theme_provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Init SQLite (inchangé)
+  await dotenv.load(fileName: ".env");
+
   if (kIsWeb) {
     databaseFactory = databaseFactoryFfiWeb;
   } else if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {

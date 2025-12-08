@@ -4,15 +4,16 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter/foundation.dart'; // Pour kIsWeb
 import '../models/place_model.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class PlacesService {
   // ⚠️ REMETTRE VOTRE CLÉ ICI
-  static const String _apiKey = 'AIzaSyCd2yc9XIbvJpGKf43-nVwg-fOykQD2XqE'; 
+  static final String _apiKey = dotenv.env['GOOGLE_PLACES_KEY'] ?? '';
   static const String _baseUrl = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json';
   static const String _photoUrl = 'https://maps.googleapis.com/maps/api/place/photo';
   static const String _detailsUrl = 'https://maps.googleapis.com/maps/api/place/details/json';
 
-// Dans lib/services/places_service.dart
+
 
     static const Map<String, String> categoryMap = {
       'favoris': 'favorite', // Spécial
@@ -28,7 +29,6 @@ class PlacesService {
     };
   // 1. Fonction pour construire l'URL de l'image
   String _buildPhotoUrl(String photoReference) {
-    // maxwidth=400 permet d'avoir une image de bonne qualité sans être trop lourde
     String url = '$_photoUrl?maxwidth=400&photo_reference=$photoReference&key=$_apiKey';
     
     if (kIsWeb) {
@@ -59,13 +59,12 @@ class PlacesService {
           final dynamic rawRating = item['rating'];
           final double rating = rawRating is int ? rawRating.toDouble() : rawRating is double ? rawRating : 0.0;
           
-          // ⚠️ RÉCUPÉRATION DE LA PHOTO
           String finalImageUrl = '';
           if (item['photos'] != null && (item['photos'] as List).isNotEmpty) {
             final String photoRef = item['photos'][0]['photo_reference'];
             finalImageUrl = _buildPhotoUrl(photoRef);
           } else {
-            finalImageUrl = item['icon'] ?? ''; // Fallback sur l'icône si pas de photo
+            finalImageUrl = item['icon'] ?? ''; // Utilisation de l'icône par défaut
           }
 
           return Place(

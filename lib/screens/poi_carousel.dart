@@ -1,5 +1,3 @@
-// lib/screens/poi_carousel.dart
-
 import 'package:flutter/material.dart';
 import '../models/place_model.dart';
 

@@ -1,5 +1,3 @@
-// lib/screens/landing_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:provider/provider.dart';
@@ -118,14 +116,14 @@ class _ExploreLandingScreenState extends State<ExploreLandingScreen> with Single
     }
 
     return Scaffold(
-      backgroundColor: Colors.black, // Évite le flash blanc au chargement
-      extendBodyBehindAppBar: true,  // ⚠️ IMPORTANT : L'image passe sous la barre de statut (haut)
-      resizeToAvoidBottomInset: false, // Évite que le clavier (si présent) ne casse le design
+      backgroundColor: Colors.black, // evite le flash blanc au chargement
+      extendBodyBehindAppBar: true,  // L'image passe sous la barre de statut (haut)
+      resizeToAvoidBottomInset: false, // evite que le clavier  ne casse le design
       
       body: Stack(
-        fit: StackFit.expand, // ⚠️ IMPORTANT : Force le Stack à prendre TOUT l'écran
+        fit: StackFit.expand, // Force le Stack à prendre TOUT l'écran
         children: [
-          // 1. IMAGE DE FOND
+          //IMAGE DE FOND
           // On utilise un Container avec height/width infinity pour être sûr
           SizedBox(
             width: double.infinity,
@@ -153,7 +151,7 @@ class _ExploreLandingScreenState extends State<ExploreLandingScreen> with Single
             ),
           ),
 
-          // 3. CONTENU (Dans une SafeArea pour ne pas être caché par l'encoche/notch)
+          // 3. CONTENU (Dans une SafeArea pour ne pas être caché par l'encoche)
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -195,22 +193,22 @@ class _ExploreLandingScreenState extends State<ExploreLandingScreen> with Single
 
                   const Spacer(flex: 3),
 
-                  // Dans lib/screens/landing_screen.dart
+                  
 
               Consumer<CityProvider>(
                 builder: (context, cityProvider, child) {
-                  // CAS 1 : CHARGEMENT (Plus beau et plus grand)
+                  // CAS 1 : CHARGEMENT 
                   if (cityProvider.isLoading) {
                     return Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Animation Lottie agrandie
+                        // Animation Lottie 
                         SizedBox(
-                          height: 250, // On passe de 100 à 250 pour que ce soit bien visible
+                          height: 250, 
                           child: Lottie.asset(
                             'assets/loading.json',
                             fit: BoxFit.contain, // Garde les proportions
-                            // Si le fichier Lottie n'est pas trouvé, on affiche un loader classique doré
+                            // Si le fichier Lottie ne charge pas, on affiche un loader classique doré
                             errorBuilder: (c, e, s) => Transform.scale(
                               scale: 1.5, 
                               child: const CircularProgressIndicator(color: Colors.amber),
@@ -237,7 +235,7 @@ class _ExploreLandingScreenState extends State<ExploreLandingScreen> with Single
                     );
                   }
 
-                  // CAS 2 : BOUTON NORMAL (Inchangé)
+                  //BOUTON COMMENCER
                   return ScaleTransition(
                     scale: _btnScaleAnim,
                     child: ElevatedButton(

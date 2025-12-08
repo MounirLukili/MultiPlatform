@@ -7,22 +7,22 @@ import '../models/city_model.dart';
 class CitySearchService {
   static const String _baseUrl = 'https://nominatim.openstreetmap.org/search';
 
-  // Recherche des villes par nom (Fonctionnalité 1.3)
+  // Recherche des villes par nom 
   Future<List<City>> searchCities(String query) async {
     if (query.isEmpty) {
       return [];
     }
 
-    // ⚠️ Sécurité: Encoder la requête pour gérer les espaces et caractères spéciaux
+    //Encoder la requête pour gérer les espaces et caractères spéciaux
     final encodedQuery = Uri.encodeComponent(query);
     
-    // Paramètres : format JSON, limite de 5 résultats.
+    // param : format JSON, limite de 5 résultats.
     final url = '$_baseUrl?q=$encodedQuery&format=json&extratags=1&limit=5&addressdetails=1';
     
     try {
       final response = await http.get(
         Uri.parse(url),
-        // ⚠️ User-Agent plus détaillé pour une meilleure acceptation par Nominatim
+        // User-Agent plus détaillé pour une meilleure acceptation par Nominatim
         headers: {
           'User-Agent': 'ExplorezVotreVilleFlutterApp/1.0 (Contact: projet.m1.info@univ-orleans.fr)', 
         },
@@ -37,11 +37,11 @@ class CitySearchService {
           
           final String displayName = item['display_name'] ?? 'Ville inconnue';
           
-          // Tente d'extraire le pays
+          // xtraire le pays
           final List<String> parts = displayName.split(',').map((s) => s.trim()).toList();
           final String country = parts.length > 1 ? parts.last : 'N/A';
           
-          // Tente d'obtenir le nom de la ville à partir de l'adresse détaillée
+          // obtenir le nom de la ville à partir de l'adresse 
           final address = item['address'] ?? {};
           // Utilise locality, city, town, ou le premier segment de display_name comme fallback
           final city = address['locality'] ?? address['city'] ?? address['town'] ?? address['village'] ?? parts.first;

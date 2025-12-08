@@ -1,5 +1,3 @@
-// lib/models/place_model.dart
-
 class Place {
   final int? id; 
   final String cityName; 
@@ -12,10 +10,10 @@ class Place {
   final double rating; 
   final int noteCount;
   
-  // L'identifiant unique Google (ex: "ChIJ...")
+  // L'id unique Google 
   final String placeId; 
 
-  // ⚠️ AJOUTS OBLIGATOIRES POUR SQLITE (Commentaires & Notes perso)
+  //POUR SQLITE (Commentaires & Notes perso)
   // Ces champs ne sont pas 'final' car on peut vouloir les modifier après chargement
   String? userComment;
   double? userRating;
@@ -32,7 +30,6 @@ class Place {
     this.rating = 0.0,
     this.noteCount = 0,
     required this.placeId,
-    // ⚠️ On les ajoute au constructeur
     this.userComment,
     this.userRating,
   });
@@ -50,7 +47,6 @@ class Place {
       'rating': rating,
       'noteCount': noteCount,
       'placeId': placeId,
-      // ⚠️ On les ajoute au mappage vers la BDD
       'userComment': userComment,
       'userRating': userRating,
     };
@@ -75,9 +71,8 @@ class Place {
     );
   }
 
-  // ... (Constructeurs et autres méthodes existants)
 
-  // ⚠️ AJOUT : Méthode pour cloner un lieu en modifiant certains champs
+  //  Méthode pour cloner un lieu en modifiant certains champs
   Place copyWith({
     String? placeId,
     String? cityName,
@@ -93,7 +88,7 @@ class Place {
     double? userRating,
   }) {
     return Place(
-      id: id, // On garde le même ID interne
+      id: id, 
       placeId: placeId ?? this.placeId,
       cityName: cityName ?? this.cityName,
       title: title ?? this.title,
@@ -108,5 +103,4 @@ class Place {
       userRating: userRating ?? this.userRating,
     );
   }
-// ... (Reste du fichier)
 }
