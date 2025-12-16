@@ -83,9 +83,20 @@ Si vous lui demandez un bon restaurant à Orléans, il est tout à fait capable 
 
 
 
+
 ### Projet réalisé par Lukili Mounir et Bahhous Houssam-Eddine ###
 
 ### Quelques photos ###
- * Dans le meme fichier ZIP , vous trouvez les photos illustrants les écrans principaux de l'application
- * https://github.com/MounirLukili/MultiPlatform Pour voir la totalité du projet ainsi que d'autres photos sur Android
- *
+<img width="859" height="895" alt="1" src="https://github.com/user-attachments/assets/0fd7955f-753b-4b57-81ab-999a36a99094" />
+<img width="860" height="886" alt="2" src="https://github.com/user-attachments/assets/104cef2e-4c09-4b48-9a81-3023b1f904b1" />
+<img width="860" height="886" alt="3" src="https://github.com/user-attachments/assets/2e5daab1-892d-4e3c-b165-ff6ae2e7d4d1" />
+<img width="860" height="886" alt="4" src="https://github.com/user-attachments/assets/4f53c9af-7466-43dc-beff-23b8cccdff5d" />
+<img width="860" height="886" alt="5" src="https://github.com/user-attachments/assets/1801d8b4-1f06-4802-9940-a18a8433c6c1" />
+<img width="860" height="886" alt="6" src="https://github.com/user-attachments/assets/27ec6c0b-4e73-4c7c-a125-53004d4e6d3e" />
+<img width="867" height="892" alt="7" src="https://github.com/user-attachments/assets/5e67dc59-094b-4420-9262-1ce92bacc01a" />
+<img width="867" height="892" alt="8" src="https://github.com/user-attachments/assets/e0812805-d5be-429e-b8a8-5944bb9aa74d" />
+<img width="867" height="892" alt="9" src="https://github.com/user-attachments/assets/2f50b59f-e27b-4ad0-a0f5-463a065ecd6f" />
+<img width="867" height="892" alt="10" src="https://github.com/user-attachments/assets/7edd222a-4494-4644-b3d3-565e2d923543" />
+<img width="867" height="892" alt="11" src="https://github.com/user-attachments/assets/e12891ac-ff7a-40d0-b92b-b0ece3bebedc" />
+<img width="867" height="892" alt="12" src="https://github.com/user-attachments/assets/a6d3c3ac-1015-479d-b624-6dc31558423e" />
+
