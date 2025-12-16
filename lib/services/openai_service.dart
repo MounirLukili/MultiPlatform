@@ -4,7 +4,6 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class OpenAIService {
 static final String _apiKey = dotenv.env['OPENAI_KEY'] ?? '';  
-  // On prend une liste de messages (l'historique)
 Future<Map<String, String>> getChatResponse(String userMessage) async {
     const String url = 'https://api.openai.com/v1/chat/completions';
 

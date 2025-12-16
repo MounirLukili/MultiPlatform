@@ -130,7 +130,7 @@ class _ExploreLandingScreenState extends State<ExploreLandingScreen> with Single
             height: double.infinity,
             child: Image.network(
               'https://images.unsplash.com/photo-1519501025264-65ba15a82390?q=80&w=1000&auto=format&fit=crop',
-              fit: BoxFit.cover, // Remplit tout l'espace en coupant les bords si nécessaire
+              fit: BoxFit.cover, // Remplit tout l'espace 
               errorBuilder: (c, e, s) => Container(color: const Color(0xFF1A1A2E)),
             ),
           ),
@@ -151,7 +151,7 @@ class _ExploreLandingScreenState extends State<ExploreLandingScreen> with Single
             ),
           ),
 
-          // 3. CONTENU (Dans une SafeArea pour ne pas être caché par l'encoche)
+          // 3. CONTENU 
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -216,16 +216,16 @@ class _ExploreLandingScreenState extends State<ExploreLandingScreen> with Single
                           ),
                         ),
                         
-                        const SizedBox(height: 20), // Un peu plus d'espace
+                        const SizedBox(height: 20),
                         
-                        // Texte stylisé avec une ombre pour ressortir sur le fond
+                        
                         const Text(
                           "Recherche de votre position...",
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 18, 
                             fontWeight: FontWeight.w500,
-                            letterSpacing: 1.2, // Espacement des lettres pour le style "Premium"
+                            letterSpacing: 1.2, 
                             shadows: [
                               Shadow(color: Colors.black, blurRadius: 10, offset: Offset(0, 2))
                             ],

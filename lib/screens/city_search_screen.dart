@@ -51,7 +51,7 @@ class _CitySearchScreenState extends State<CitySearchScreen> {
     return Consumer<CityProvider>(
       builder: (context, cityProvider, child) {
         
-        // On vérifie les conditions pour l'auto-sélection
+        // On vérifie les conditions pour l'auto-sélect
         bool shouldAutoSelect = !cityProvider.isSearching && 
                                 cityProvider.searchResults.length == 1 && 
                                 _controller.text.isNotEmpty;
@@ -66,12 +66,9 @@ class _CitySearchScreenState extends State<CitySearchScreen> {
                _selectCity(cityProvider.searchResults.first);
             });
           }
-          // On affiche le chargement (cela évite d'afficher la liste 1/10ème de seconde)
           return const Scaffold(body: Center(child: CircularProgressIndicator()));
         } else {
-          // Si on n'est plus dans le cas "1 seul résultat" (ex: on a effacé une lettre), on déverrouille
           if (_isRedirecting) {
-             // On utilise un microtask pour éviter l'erreur "setState during build"
              Future.microtask(() {
                if (mounted) setState(() => _isRedirecting = false);
              });

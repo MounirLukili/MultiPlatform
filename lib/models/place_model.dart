@@ -9,12 +9,7 @@ class Place {
   final String imageUrl; 
   final double rating; 
   final int noteCount;
-  
-  // L'id unique Google 
   final String placeId; 
-
-  //POUR SQLITE (Commentaires & Notes perso)
-  // Ces champs ne sont pas 'final' car on peut vouloir les modifier après chargement
   String? userComment;
   double? userRating;
 
@@ -65,7 +60,6 @@ class Place {
       rating: map['rating'] as double? ?? 0.0,
       noteCount: map['noteCount'] as int? ?? 0,
       placeId: map['placeId'] as String? ?? '',
-      // ⚠️ On les récupère depuis la BDD
       userComment: map['userComment'] as String?,
       userRating: map['userRating'] as double?,
     );

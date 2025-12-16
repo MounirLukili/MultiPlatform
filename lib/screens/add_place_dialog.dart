@@ -1,5 +1,3 @@
-// lib/screens/add_place_dialog.dart
-
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'dart:ui';
@@ -7,8 +5,6 @@ import '../models/place_model.dart';
 import '../services/database_service.dart';
 import '../services/geoloc_service.dart';
 import '../services/places_service.dart';
-
-// IMPORTS DES NOUVEAUX WIDGETS
 import '../widgets/dialog_header_image.dart';
 import '../widgets/category_chips_selector.dart';
 
@@ -179,7 +175,6 @@ class _AddPlaceDialogState extends State<AddPlaceDialog> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // UTILISATION DU WIDGET EXTRAIT
                   DialogHeaderImage(
                     imageUrl: _fetchedImageUrl,
                     category: _selectedCategory,
@@ -214,7 +209,6 @@ class _AddPlaceDialogState extends State<AddPlaceDialog> {
                           const Text("CATÉGORIE", style: TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
                           const SizedBox(height: 10),
                           
-                          // UTILISATION DU WIDGET EXTRAIT
                           CategoryChipsSelector(
                             categories: _categories,
                             selectedCategory: _selectedCategory,

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dart:ui'; // Pour BackdropFilter
+import 'dart:ui'; 
 import '../models/place_model.dart';
 
 class AnimatedPlaceCard extends StatelessWidget {
@@ -84,7 +84,7 @@ class AnimatedPlaceCard extends StatelessWidget {
                 ),
               ),
 
-              // Note (Rating) en haut à droite
+              // Note en haut à droite
               Positioned(
                 top: 10, right: 10,
                 child: ClipRRect(

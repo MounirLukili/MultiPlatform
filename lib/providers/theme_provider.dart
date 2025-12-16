@@ -1,12 +1,10 @@
-// lib/providers/theme_provider.dart
-
 import 'package:flutter/material.dart';
 import '../services/preferences_service.dart';
 
 class ThemeProvider with ChangeNotifier {
   final PreferencesService _prefs = PreferencesService();
   
-  // MODIFICATION ICI : On force le mode CLAIR par défaut
+  // On force le mode CLAIR par défaut
   ThemeMode _themeMode = ThemeMode.light; 
 
   ThemeMode get themeMode => _themeMode;

@@ -24,7 +24,7 @@ static final String _apiKey = dotenv.env['OPENWEATHER_KEY'] ?? '';
           'maxTemp': data['main']['temp_max'].toDouble(),
           'weatherCondition': data['weather'][0]['description'] as String,
           'humidity': data['main']['humidity'] as int,
-          // Conversion de la vitesse du vent de m/s à km/h (pour une meilleure lisibilité)
+          // Conversion de la vitesse du vent de m/s à km/h 
           'windSpeed': (data['wind']['speed'] * 3.6).toDouble(), 
         };
         return weatherData;

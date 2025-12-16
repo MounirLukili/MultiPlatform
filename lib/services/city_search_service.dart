@@ -16,13 +16,11 @@ class CitySearchService {
     //Encoder la requête pour gérer les espaces et caractères spéciaux
     final encodedQuery = Uri.encodeComponent(query);
     
-    // param : format JSON, limite de 5 résultats.
     final url = '$_baseUrl?q=$encodedQuery&format=json&extratags=1&limit=5&addressdetails=1';
     
     try {
       final response = await http.get(
         Uri.parse(url),
-        // User-Agent plus détaillé pour une meilleure acceptation par Nominatim
         headers: {
           'User-Agent': 'ExplorezVotreVilleFlutterApp/1.0 (Contact: projet.m1.info@univ-orleans.fr)', 
         },

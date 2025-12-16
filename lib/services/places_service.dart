@@ -7,7 +7,6 @@ import '../models/place_model.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class PlacesService {
-  // ⚠️ REMETTRE VOTRE CLÉ ICI
   static final String _apiKey = dotenv.env['GOOGLE_PLACES_KEY'] ?? '';
   static const String _baseUrl = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json';
   static const String _photoUrl = 'https://maps.googleapis.com/maps/api/place/photo';
@@ -16,16 +15,16 @@ class PlacesService {
 
 
     static const Map<String, String> categoryMap = {
-      'favoris': 'favorite', // Spécial
+      'favoris': 'favorite', 
       'manger': 'restaurant',
       'cafés': 'cafe',
       'nature': 'park',
       'culture': 'museum',
-      'shopping': 'shopping_mall', // 🆕
-      'hôtels': 'lodging',         // 🆕
-      'santé': 'pharmacy',         // 🆕
-      'banque': 'bank',            // 🆕
-      'essence': 'gas_station',    // 🆕
+      'shopping': 'shopping_mall', 
+      'hôtels': 'lodging',         
+      'santé': 'pharmacy',         
+      'banque': 'bank',            
+      'essence': 'gas_station',    
     };
   // 1. Fonction pour construire l'URL de l'image
   String _buildPhotoUrl(String photoReference) {
@@ -88,9 +87,8 @@ class PlacesService {
     }
   }
 
-  // 2. NOUVELLE MÉTHODE : Récupérer plus de détails (Téléphone, Site Web, etc.)
+  
   Future<Map<String, dynamic>> fetchPlaceDetails(String placeId) async {
-    // On demande des champs spécifiques : formatted_phone_number, website, opening_hours
     String url = '$_detailsUrl?place_id=$placeId&fields=formatted_phone_number,website,opening_hours&key=$_apiKey';
     
     if (kIsWeb) url = 'https://cors-anywhere.herokuapp.com/$url';
@@ -163,7 +161,7 @@ class PlacesService {
     } catch (e) {
       print("Erreur recherche textuelle: $e");
     }
-    return null; // Rien trouvé
+    return null; // si rien trouvé
   }
 
 }

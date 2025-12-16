@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'dart:ui'; // Pour l'effet de flou
+import 'dart:ui'; 
 import '../services/openai_service.dart';
 import '../services/places_service.dart';
 import '../providers/city_provider.dart';
@@ -100,7 +100,6 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
  
 
   Widget _buildMessageBubble(String text, bool isUser, String? keyword) {
-    // ⚠️ LARGEUR DYNAMIQUE : 80% de l'écran au lieu de 300px fixe
     final double maxBubbleWidth = MediaQuery.of(context).size.width * 0.80;
 
     return Align(
@@ -120,7 +119,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
           boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 6, offset: const Offset(0, 3))],
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min, // Prend juste la place nécessaire
+          mainAxisSize: MainAxisSize.min, 
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(

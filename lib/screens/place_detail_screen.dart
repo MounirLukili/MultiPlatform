@@ -1,5 +1,3 @@
-// lib/screens/place_detail_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import '../models/place_model.dart';
@@ -7,8 +5,6 @@ import '../services/places_service.dart';
 import '../services/database_service.dart';
 import 'note_comment_dialog.dart';
 import 'add_place_dialog.dart';
-
-// IMPORTS DES NOUVEAUX WIDGETS
 import '../widgets/place_header_image.dart';
 import '../widgets/place_contact_info.dart';
 import '../widgets/place_map_preview.dart';

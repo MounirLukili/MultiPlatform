@@ -20,9 +20,7 @@ class DatabaseService {
   }
 
   Future<Database> _initDB(String filePath) async {
-    // -----------------------------------------------
-    // PLATFORM HANDLING → VERY IMPORTANT
-    // -----------------------------------------------
+    // Initialisation spécifique de la bdd selon la plateforme
     if (!kIsWeb && (Platform.isLinux || Platform.isWindows || Platform.isMacOS)) {
       sqfliteFfiInit(); // Initialise SQLite
       databaseFactory = databaseFactoryFfi;

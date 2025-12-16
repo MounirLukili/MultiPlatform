@@ -32,7 +32,7 @@ Ce projet met en œuvre des concepts avancés de développement mobile : archite
 
 ## 🛠️ Architecture Technique
 
-Le projet respecte une architecture propre (**Clean Architecture**) simplifiée, séparant clairement la logique métier, les données et l'interface utilisateur.
+Le projet respecte une architecture propre simplifiée, séparant clairement la logique métier, les données et l'interface utilisateur.
 
 ### 📂 Structure du Code
 
@@ -47,10 +47,23 @@ Le projet respecte une architecture propre (**Clean Architecture**) simplifiée,
     * `PoiProvider` : Gère la liste des points d'intérêts affichés sur la carte.
     * `ThemeProvider` : Gère le basculement dynamique entre les thèmes clair et sombre.
 * **`lib/widgets/`** : Composants UI réutilisables.
-    * `WeatherCard`, `AnimatedPlaceCard`, `CategorySelector` : Widgets autonomes pour alléger les écrans principaux.
+    * `WeatherCard`, `AnimatedPlaceCard`, `CategorySelector` : Widgets autonomes pour alléger les écrans principaux, refactor le code et le rendre plus laisible
 
 ---
 
+## ⚠️ Disclaimer : L'IA est un poète, pas un GPS
+
+Même en lui donnant gentiment votre position exacte, notre assistant IA souffre d'un **syndrome de l'envie d'ailleurs**.
+
+Si vous lui demandez un bon restaurant à Orléans, il est tout à fait capable de vous recommander chaudement une adresse... **à New York ou Tokyo**. 🗽🇯🇵
+
+* **Le problème :** L'IA privilégie la "popularité mondiale" à la "proximité locale". Pour elle, le meilleur burger du monde est à Manhattan, peu importe que vous soyez à 6000 km de là.
+* **Notre solution :** Ne prenez pas ses suggestions de *noms* de lieux au pied de la lettre ! L'IA sert ici de **moteur d'inspiration** (trouver une idée : "Coréen", "Parc calme", "Musée insolite").
+* **La réalité :** Une fois l'idée trouvée par l'IA, c'est notre application qui reprend la main pour chercher si ce type de lieu existe *vraiment* autour de vous via Google Maps.
+
+*Bref, l'IA rêve, mais c'est la Carte qui conduit.* 🚗
+
+### 
 ## ⚙️ Installation et Configuration
 
 ### Prérequis
@@ -72,4 +85,7 @@ Le projet respecte une architecture propre (**Clean Architecture**) simplifiée,
 
 ### Projet réalisé par Lukili Mounir et Bahhous Houssam-Eddine ###
 
-
+### Quelques photos ###
+ * Dans le meme fichier ZIP , vous trouvez les photos illustrants les écrans principaux de l'application
+ * https://github.com/MounirLukili/MultiPlatform Pour voir la totalité du projet ainsi que d'autres photos sur Android
+ *

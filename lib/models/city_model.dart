@@ -1,19 +1,16 @@
-import 'package:flutter/foundation.dart'; //  pour UniqueKey
+import 'package:flutter/foundation.dart'; 
 
 class City {
-  // Id pour detect les changements
-  final String id;
 
+  final String id;
   final String name;
   final String country;
-  // Coordonnées 
   final double latitude;
   final double longitude;
-  // Informations Météo 
   final double currentTemp;
   final double minTemp;
   final double maxTemp;
-  final String weatherCondition; // ex: 'Ensoleillé'
+  final String weatherCondition; 
   final int humidity;
   final double windSpeed;
 
@@ -32,7 +29,6 @@ class City {
   });
 
   // Méthode de commodité pour créer une ville sans les données météo initiales 
-  // (utilisée lors de la recherche par coordonnées avant l'appel à l'API météo)
   factory City.fromCoordinates({
     required String name,
     required String country,

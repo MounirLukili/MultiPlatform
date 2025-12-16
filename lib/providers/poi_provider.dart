@@ -40,10 +40,8 @@ class PoiProvider with ChangeNotifier {
       if (categoryKey.toLowerCase() == 'favoris') {
         print("🔍 Recherche des favoris...");
         if (cityName != null) {
-          // Si on a un nom de ville, on ne charge que ceux-là !
           fetchedPois = await DatabaseService.instance.getPlacesForCity(cityName);
         } else {
-          // Sinon on charge tout 
           fetchedPois = await DatabaseService.instance.getAllPlaces();
         }
         

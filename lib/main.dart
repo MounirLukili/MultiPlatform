@@ -37,7 +37,7 @@ class ExplorezVotreVilleWrapper extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => CityProvider()),
         ChangeNotifierProvider(create: (_) => PoiProvider()),
-        ChangeNotifierProvider(create: (_) => ThemeProvider()), // ⚠️ AJOUT
+        ChangeNotifierProvider(create: (_) => ThemeProvider()), 
       ],
       // On utilise un Consumer ici pour reconstruire l'app quand le thème change
       child: Consumer<ThemeProvider>(

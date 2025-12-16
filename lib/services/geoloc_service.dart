@@ -6,13 +6,12 @@ import 'package:flutter/foundation.dart';
 
 class GeolocService {
 
-  // ------------------------------------------------------------
-  // 1. Permissions → Jamais utilisées sur Desktop
-  // ------------------------------------------------------------
+  
+  // Permissions → Jamais utilisées sur Desktop
+  
   Future<LocationPermission> checkAndRequestPermission() async {
-    // DESKTOP → Aucun GPS, donc aucune permission à demander
     if (!kIsWeb && (Platform.isLinux || Platform.isWindows || Platform.isMacOS)) {
-      return LocationPermission.whileInUse; // Valeur par défaut
+      return LocationPermission.whileInUse; 
     }
 
     // --- MOBILE ---
@@ -35,16 +34,14 @@ class GeolocService {
     return permission;
   }
 
-  // ------------------------------------------------------------
   // 2. Obtenir position → Desktop = IP, Mobile = GPS
-  // ------------------------------------------------------------
   Future<Position> getCurrentPosition() async {
     // DESKTOP → On ne tente jamais Geolocator
     if (!kIsWeb && (Platform.isLinux || Platform.isWindows || Platform.isMacOS)) {
       return await _getPositionFromIP();
     }
 
-    // --- MOBILE (Android / iOS) ---
+    // --- MOBILE---
     try {
       return await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
@@ -56,9 +53,9 @@ class GeolocService {
     }
   }
 
-  // ------------------------------------------------------------
-  // 3. Fallback par IP (Linux / Windows / macOS / mobile offline)
-  // ------------------------------------------------------------
+  
+  // 3. Fallback par IP (Desktop)
+ 
   Future<Position> _getPositionFromIP() async {
     try {
       final response = await http
@@ -100,9 +97,7 @@ class GeolocService {
     );
   }
 
-  // ------------------------------------------------------------
   // 4. Reverse Geocoding (adresse → ville/pays)
-  // ------------------------------------------------------------
   Future<Map<String, dynamic>> reverseGeocode(double lat, double lon) async {
     final url =
         'https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lon&zoom=10&addressdetails=1';

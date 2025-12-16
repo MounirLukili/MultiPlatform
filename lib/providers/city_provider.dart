@@ -90,7 +90,7 @@ class CityProvider with ChangeNotifier {
 
   
 
-  // ⚠️ 4. Nouvelle méthode de recherche de ville (
+ 
   Future<void> searchCity(String query) async {
     if (query.trim().isEmpty) {
       _searchResults = [];
